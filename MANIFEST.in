@@ -1,0 +1,3 @@
+include *.jpg
+include *.txt
+recursive-include tests *.py
