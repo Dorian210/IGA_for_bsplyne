@@ -26,6 +26,11 @@
   <li><a href="#iga_for_bsplyne">IGA_for_bsplyne</a>
   <ul>
     <li><a href="#installation">Installation</a></li>
+    <li><a href="#main-modules">Main Modules</a></li>
+    <li><a href="#examples">Examples</a></li>
+    <li><a href="#documentation">Documentation</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
   </ul></li>
 </ul>
 
@@ -53,23 +58,73 @@ IGA_for_bsplyne    </h1>
 
                         <div class="docstring"><h1 id="iga_for_bsplyne">IGA_for_bsplyne</h1>
 
-<p>A package for 3D isogeometric analysis elasticity problems using the <code>bsplyne</code> library.</p>
+<p><strong>IGA_for_bsplyne</strong> is a Python library for 3D isogeometric analysis (IGA) applied to elasticity problems. This library builds upon the previous work from the <a href="https://github.com/Dorian210/bsplyne">bsplyne</a> library and extends its capabilities for complex elasticity simulations.</p>
+
+<blockquote>
+  <p><strong>Note:</strong> This library is not yet available on PyPI. To install, please clone the repository and install it manually.</p>
+</blockquote>
 
 <h2 id="installation">Installation</h2>
 
-<p>Before installing this package, install <code>scikit-sparse</code> via conda:</p>
+<p>Since <strong>IGA_for_bsplyne</strong> is not yet on PyPI, you can install it locally as follows:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Dorian210/IGA_for_bsplyne
+<span class="nb">cd</span><span class="w"> </span>IGA_for_bsplyne
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre>
+</div>
+
+<p>Make sure to also install the required dependency <a href="https://github.com/Dorian210/bsplyne">bsplyne</a> manually:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Dorian210/bsplyne
+<span class="nb">cd</span><span class="w"> </span>bsplyne
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre>
+</div>
+
+<p>Additionally, ensure that <a href="https://github.com/scikit-sparse/scikit-sparse">scikit-sparse</a> is installed (recommended installation via conda):</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>scikit-sparse
 </code></pre>
 </div>
 
-<p>Then install the rest with:</p>
+<h2 id="main-modules">Main Modules</h2>
 
-<div class="pdoc-code codehilite">
-<pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>mon_projet
-</code></pre>
-</div>
+<ul>
+<li><p><strong>Dirichlet</strong><br />
+Manages Dirichlet boundary conditions by applying an affine mapping (u = C @ dof + k).<br />
+<em>Key functions</em>: <code>Dirichlet.eye()</code>, <code>Dirichlet.lock_disp_inds()</code>, <code>set_u_inds_vals()</code>, <code>u_du_ddof()</code>, <code>u()</code>, <code>dof_lsq()</code></p></li>
+<li><p><strong>IGAPatch</strong><br />
+Constructs a 3D IGA patch to compute the stiffness matrix, right-hand side vector, and other operators for elasticity problems over a B-spline volume.<br />
+<em>Key functions</em>: <code>jacobian()</code>, <code>grad_N()</code>, <code>make_W()</code>, <code>stiffness()</code>, <code>rhs()</code>, <code>epsilon()</code>, <code>sigma()</code>, <code>sigma_eig()</code>, <code>von_mises()</code>, <code>save_paraview()</code></p></li>
+<li><p><strong>ProblemIGA</strong><br />
+Assembles the global system of equations, applies boundary conditions, and solves the elasticity problem across one or more patches.<br />
+<em>Key functions</em>: <code>assembly_block()</code>, <code>lhs_rhs()</code>, <code>apply_dirichlet()</code>, <code>solve_from_lhs_rhs()</code>, <code>solve()</code>, <code>save_paraview()</code></p></li>
+</ul>
+
+<h2 id="examples">Examples</h2>
+
+<p>Several example scripts demonstrating the usage of <strong>IGA_for_bsplyne</strong> can be found in the <code>examples/</code> directory. These scripts cover different aspects of the library, including setting up boundary conditions, creating IGA patches, and solving elasticity problems.</p>
+
+<h2 id="documentation">Documentation</h2>
+
+<p>The full API documentation is available in the <code>doc/</code> directory of the project or via the <a href="https://raw.githack.com/Dorian210/IGA_for_bsplyne/refs/heads/main/doc/IGA_for_bsplyne.html">online documentation portal</a>.</p>
+
+<h2 id="contributing">Contributing</h2>
+
+<p>Contributions are welcome!  </p>
+
+<ul>
+<li>To report bugs or suggest improvements, please open an issue.</li>
+<li>For direct contributions, feel free to fork the repository and submit pull requests.</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>This project is licensed under the <a href="LICENSE.txt">CeCILL License</a>.</p>
 </div>
 
                         <input id="mod-IGA_for_bsplyne-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">

@@ -96,7 +96,7 @@ class ProblemIGA:
         
         # Split patches into blocks
         num_blocks = int(os.cpu_count()) # type: ignore
-        patch_indices = np.array_split(range(self.connectivity.nb_patchs), num_blocks)
+        patch_indices = [block for block in np.array_split(range(self.connectivity.nb_patchs), num_blocks) if block.size!=0]
 
         # Parallel processing of blocks with progress bar for blocks
         with ProcessPoolExecutor() as executor:
