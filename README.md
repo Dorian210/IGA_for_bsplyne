@@ -52,9 +52,7 @@ The full API documentation is available in the `docs/` directory of the project 
 
 ## Contributing
 
-Contributions are welcome!  
-- To report bugs or suggest improvements, please open an issue.
-- For direct contributions, feel free to fork the repository and submit pull requests.
+At the moment, I am not actively reviewing contributions. However, if you encounter issues or have suggestions, feel free to open an issue.
 
 ## License
 
