@@ -48,7 +48,7 @@ Several example scripts demonstrating the usage of **IGA_for_bsplyne** can be fo
 
 ## Documentation
 
-The full API documentation is available in the `doc/` directory of the project or via the [online documentation portal](https://dorian210.github.io/IGA_for_bsplyne/IGA_for_bsplyne.html).
+The full API documentation is available in the `docs/` directory of the project or via the [online documentation portal](https://dorian210.github.io/IGA_for_bsplyne/IGA_for_bsplyne.html).
 
 ## Contributing
 
