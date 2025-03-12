@@ -211,7 +211,7 @@ class Dirichlet:
         return dof
 
 
-@nb.njit
+@nb.njit(cache=True)
 def master_slave_linear_relation_sort_topology(masters: np.ndarray[int], slaves: np.ndarray[int]) -> np.ndarray[int]:
     """
     Sorts the master nodes in a topological order based on dependencies.
@@ -252,7 +252,7 @@ def master_slave_linear_relation_sort_topology(masters: np.ndarray[int], slaves:
     
     return sorted_masters
 
-@nb.njit
+@nb.njit(cache=True)
 def apply_master_slave_linear_relation_inner(
     indices: np.ndarray[int], 
     indptr: np.ndarray[int], 
