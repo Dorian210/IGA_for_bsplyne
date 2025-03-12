@@ -2,6 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import scipy.sparse as sps
 from scipy.sparse.linalg import spsolve
+import numba as nb
 
 class Dirichlet:
     """
@@ -112,6 +113,38 @@ class Dirichlet:
             self.C = C_coo.tocsc()
             self.k[inds] = vals
     
+    def master_slave_linear_relation(self, masters: np.ndarray[int], slaves: np.ndarray[int], coefs: np.ndarray[float]):
+        """
+        This function modifies the sparse matrix `C` and the vector `k` to enforce master-slave 
+        constraints in an optimization problem. The goal is to eliminate the degrees of freedom 
+        (DOFs) associated with slave nodes, keeping only the master DOFs. The relation 
+        `u = C@dof + k` is updated so that slave DOFs are expressed as linear combinations of 
+        master DOFs, reducing the problem's size while maintaining the imposed constraints.
+        
+        Parameters
+        ----------
+        masters : np.ndarray[int]
+            Array of master indices.
+        slaves : np.ndarray[int]
+            2D array where each row contains the slaves associated with a master.
+        coefs : np.ndarray[float]
+            2D array of coefficients defining the linear relationship between masters and slaves.
+        """
+        sorted_masters = master_slave_linear_relation_sort_topology(masters, slaves)
+        
+        if len(sorted_masters)!=len(masters):
+            raise ValueError("Cyclic relations detected between masters and slaves.")
+        
+        C = self.C.tocsr()
+        rows, cols, data, self.k = apply_master_slave_linear_relation_inner(C.indices, C.indptr, C.data, 
+                                                                            self.k, masters, slaves, coefs, sorted_masters)
+        C = sps.coo_matrix((data, (rows, cols)), shape=C.shape)
+        
+        unique, inverse = np.unique(C.col, return_inverse=True)
+        C.col = np.arange(unique.size)[inverse]
+        C._shape = (C.shape[0], unique.size)
+        self.C = C.tocsc()
+    
     def u_du_ddof(self, dof: npt.NDArray[np.float_]) -> tuple[npt.NDArray[np.float_], sps.csc_matrix]:
         """
         Computes the displacement field `u` and its derivative with respect to the degrees of freedom `dof`.
@@ -176,3 +209,124 @@ class Dirichlet:
             u_shape = u.shape[:-1]
             dof = spsolve(self.C.T@self.C, (u.reshape((-1, m)) - self.k[None])@self.C).reshape((*u_shape, n))
         return dof
+
+
+@nb.njit
+def master_slave_linear_relation_sort_topology(masters: np.ndarray[int], slaves: np.ndarray[int]) -> np.ndarray[int]:
+    """
+    Sorts the master nodes in a topological order based on dependencies.
+    
+    Parameters
+    ----------
+    masters : np.ndarray[int]
+        Array of master indices.
+    slaves : np.ndarray[int]
+        2D array where each row contains the slaves associated with a master.
+
+    Returns
+    -------
+    sorted_masters : np.ndarray[int]
+        Array of master indices sorted in topological order.
+    """
+    masters_set = set(masters)
+    graph = {m: nb.typed.List.empty_list(nb.int64) for m in masters}
+    indegree = {m: 0 for m in masters}
+    
+    for i, master in enumerate(masters):
+        for slave in slaves[i]:
+            if slave in masters_set:
+                indegree[master] += 1
+                graph[slave].append(master)
+    
+    queue = [m for m in masters if indegree[m]==0]
+    sorted_masters = np.empty_like(masters)
+    i = 0
+    while queue:
+        m = queue.pop(0)
+        sorted_masters[i] = m
+        i += 1
+        for dep in graph[m]:
+            indegree[dep] -= 1
+            if indegree[dep]==0:
+                queue.append(dep)
+    
+    return sorted_masters
+
+@nb.njit
+def apply_master_slave_linear_relation_inner(
+    indices: np.ndarray[int], 
+    indptr: np.ndarray[int], 
+    data: np.ndarray[float], 
+    k: np.ndarray[float], 
+    masters: np.ndarray[int], 
+    slaves: np.ndarray[int], 
+    coefs: np.ndarray[float], 
+    sorted_masters: np.ndarray[int]
+) -> tuple[np.ndarray[int], np.ndarray[int], np.ndarray[float], np.ndarray[float]]:
+    """
+    Applies master-slave relations directly to CSR matrix arrays.
+    
+    Parameters
+    ----------
+    indices : np.ndarray[int]
+        Column indices of CSR matrix.
+    indptr : np.ndarray[int]
+        Row pointers of CSR matrix.
+    data : np.ndarray[float]
+        Nonzero values of CSR matrix.
+    k : np.ndarray[float]
+        Right-hand side vector to be updated.
+    masters : np.ndarray[int]
+        Array of master indices.
+    slaves : np.ndarray[int]
+        2D array where each row contains the slaves associated with a master.
+    coefs : np.ndarray[float]
+        2D array of coefficients defining the linear relationship between masters and slaves.
+    sorted_masters : np.ndarray[int]
+        Array of master indices sorted in topological order.
+
+    Returns
+    -------
+    rows : np.ndarray[int]
+        Updated row indices of COO matrix.
+    cols : np.ndarray[int]
+        Updated column indices of COO matrix.
+    data : np.ndarray[float]
+        Updated nonzero values of COO matrix.
+    k : np.ndarray[float]
+        Updated right-hand side vector.
+    """
+
+    # Convert CSR to list of dicts
+    dict_list = [{indices[j]: data[j] for j in range(indptr[i], indptr[i + 1])} for i in range(indptr.size - 1)]
+    
+    # Apply linear relation
+    master_to_index = {m: i for i, m in enumerate(masters)}
+    for master in sorted_masters:
+        i = master_to_index[master]
+        new_row = {}
+        for slave_ind, coef in zip(slaves[i], coefs[i]):
+            slave_row = dict_list[slave_ind]
+            for ind, val in slave_row.items():
+                if ind in new_row:
+                    new_row[ind] += coef*val
+                else:
+                    new_row[ind] = coef*val
+        new_row = {ind: val for ind, val in new_row.items() if val!=0}
+        dict_list[master] = new_row
+        k[master] = np.dot(k[slaves[i]], coefs[i])
+    
+    # Convert list of dicts to COO
+    nnz = sum([len(row) for row in dict_list])
+    rows = np.empty(nnz, dtype=np.int32)
+    cols = np.empty(nnz, dtype=np.int32)
+    data = np.empty(nnz, dtype=np.float64)
+    pos = 0
+    for i, row in enumerate(dict_list):
+        for j, val in row.items():
+            rows[pos] = i
+            cols[pos] = j
+            data[pos] = val
+            pos += 1
+
+    return rows, cols, data, k
