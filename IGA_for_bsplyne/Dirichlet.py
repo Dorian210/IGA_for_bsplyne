@@ -113,31 +113,30 @@ class Dirichlet:
             self.C = C_coo.tocsc()
             self.k[inds] = vals
     
-    def master_slave_linear_relation(self, masters: np.ndarray[int], slaves: np.ndarray[int], coefs: np.ndarray[float]):
+    def slave_reference_linear_relation(self, slaves: np.ndarray[int], references: np.ndarray[int], coefs: np.ndarray[float]):
         """
-        This function modifies the sparse matrix `C` and the vector `k` to enforce master-slave 
-        constraints in an optimization problem. The goal is to eliminate the degrees of freedom 
-        (DOFs) associated with slave nodes, keeping only the master DOFs. The relation 
-        `u = C@dof + k` is updated so that slave DOFs are expressed as linear combinations of 
-        master DOFs, reducing the problem's size while maintaining the imposed constraints.
+        This function modifies the sparse matrix `C` and the vector `k` to enforce 
+        reference-slave constraints in an optimization problem. The goal is to eliminate 
+        the degrees of freedom (DOFs) associated with slave nodes, keeping only the reference 
+        DOFs. The relation `u = C@dof + k` is updated so that slave DOFs are expressed as 
+        linear combinations of reference DOFs, reducing the problem's size while maintaining 
+        the imposed constraints.
         
         Parameters
         ----------
-        masters : np.ndarray[int]
-            Array of master indices.
         slaves : np.ndarray[int]
-            2D array where each row contains the slaves associated with a master.
+            Array of slave indices.
+        references : np.ndarray[int]
+            2D array where each row contains the reference indices controlling a slave.
         coefs : np.ndarray[float]
-            2D array of coefficients defining the linear relationship between masters and slaves.
+            2D array of coefficients defining the linear relationship between references and 
+            slaves.
         """
-        sorted_masters = master_slave_linear_relation_sort_topology(masters, slaves)
-        
-        if len(sorted_masters)!=len(masters):
-            raise ValueError("Cyclic relations detected between masters and slaves.")
+        sorted_slaves = slave_reference_linear_relation_sort(slaves, references)
         
         C = self.C.tocsr()
-        rows, cols, data, self.k = apply_master_slave_linear_relation_inner(C.indices, C.indptr, C.data, 
-                                                                            self.k, masters, slaves, coefs, sorted_masters)
+        rows, cols, data, self.k = slave_reference_linear_relation_inner(C.indices, C.indptr, C.data, 
+                                                                         self.k, slaves, references, coefs, sorted_slaves)
         C = sps.coo_matrix((data, (rows, cols)), shape=C.shape)
         
         unique, inverse = np.unique(C.col, return_inverse=True)
@@ -212,59 +211,68 @@ class Dirichlet:
 
 
 @nb.njit(cache=True)
-def master_slave_linear_relation_sort_topology(masters: np.ndarray[int], slaves: np.ndarray[int]) -> np.ndarray[int]:
+def slave_reference_linear_relation_sort(slaves: np.ndarray[int], references: np.ndarray[int]) -> np.ndarray[int]:
     """
-    Sorts the master nodes in a topological order based on dependencies.
+    Sorts the slave nodes based on reference indices to respect 
+    hierarchical dependencies (each slave is processed after its references).
     
     Parameters
     ----------
-    masters : np.ndarray[int]
-        Array of master indices.
     slaves : np.ndarray[int]
-        2D array where each row contains the slaves associated with a master.
-
+        Array of slave indices.
+    references : np.ndarray[int]
+        2D array where each row contains the reference indices controlling a slave.
+    
     Returns
     -------
-    sorted_masters : np.ndarray[int]
-        Array of master indices sorted in topological order.
+    sorted_slaves : np.ndarray[int]
+        Array of slave indices sorted based on dependencies.
     """
-    masters_set = set(masters)
-    graph = {m: nb.typed.List.empty_list(nb.int64) for m in masters}
-    indegree = {m: 0 for m in masters}
+    slaves_set = set(slaves)
+    graph = {s: nb.typed.List.empty_list(nb.int64) for s in slaves}
+    indegree = {s: 0 for s in slaves}
     
-    for i, master in enumerate(masters):
-        for slave in slaves[i]:
-            if slave in masters_set:
-                indegree[master] += 1
-                graph[slave].append(master)
+    # Building the graph
+    for i in range(len(slaves)):
+        for reference in references[i]:
+            if reference in slaves_set:
+                indegree[reference] += 1
+                graph[slaves[i]].append(reference)
     
-    queue = [m for m in masters if indegree[m]==0]
-    sorted_masters = np.empty_like(masters)
+    # Queue for slaves with no dependencies (in-degree 0)
+    queue = [s for s in slaves if indegree[s]==0]
+    
+    # Topological sorting via BFS
+    sorted_slaves = np.empty(len(slaves), dtype='int')
     i = 0
     while queue:
-        m = queue.pop(0)
-        sorted_masters[i] = m
+        slave = queue.pop(0)
+        sorted_slaves[i] = slave
         i += 1
-        for dep in graph[m]:
-            indegree[dep] -= 1
-            if indegree[dep]==0:
-                queue.append(dep)
+        for dependent_slave in graph[slave]:
+            indegree[dependent_slave] -= 1
+            if indegree[dependent_slave]==0:
+                queue.append(dependent_slave)
     
-    return sorted_masters
+    if i != len(slaves):
+        raise ValueError("Cyclic dependency detected in slaves.")
+    
+    sorted_slaves = sorted_slaves[::-1]
+    return sorted_slaves
 
 @nb.njit(cache=True)
-def apply_master_slave_linear_relation_inner(
+def slave_reference_linear_relation_inner(
     indices: np.ndarray[int], 
     indptr: np.ndarray[int], 
     data: np.ndarray[float], 
     k: np.ndarray[float], 
-    masters: np.ndarray[int], 
     slaves: np.ndarray[int], 
+    references: np.ndarray[int], 
     coefs: np.ndarray[float], 
-    sorted_masters: np.ndarray[int]
+    sorted_slaves: np.ndarray[int]
 ) -> tuple[np.ndarray[int], np.ndarray[int], np.ndarray[float], np.ndarray[float]]:
     """
-    Applies master-slave relations directly to CSR matrix arrays.
+    Applies slave-reference relations directly to CSR matrix arrays.
     
     Parameters
     ----------
@@ -275,15 +283,16 @@ def apply_master_slave_linear_relation_inner(
     data : np.ndarray[float]
         Nonzero values of CSR matrix.
     k : np.ndarray[float]
-        Right-hand side vector to be updated.
-    masters : np.ndarray[int]
-        Array of master indices.
+        Vector to be updated.
     slaves : np.ndarray[int]
-        2D array where each row contains the slaves associated with a master.
+        Array of slave indices.
+    references : np.ndarray[int]
+        2D array where each row contains the reference indices controlling a slave.
     coefs : np.ndarray[float]
-        2D array of coefficients defining the linear relationship between masters and slaves.
-    sorted_masters : np.ndarray[int]
-        Array of master indices sorted in topological order.
+        2D array of coefficients defining the linear relationship between references and 
+        slaves.
+    sorted_slaves : np.ndarray[int]
+        Array of slave indices sorted in topological order.
 
     Returns
     -------
@@ -294,27 +303,27 @@ def apply_master_slave_linear_relation_inner(
     data : np.ndarray[float]
         Updated nonzero values of COO matrix.
     k : np.ndarray[float]
-        Updated right-hand side vector.
+        Updated vector.
     """
 
     # Convert CSR to list of dicts
     dict_list = [{indices[j]: data[j] for j in range(indptr[i], indptr[i + 1])} for i in range(indptr.size - 1)]
     
     # Apply linear relation
-    master_to_index = {m: i for i, m in enumerate(masters)}
-    for master in sorted_masters:
-        i = master_to_index[master]
+    slaves_to_index = {s: i for i, s in enumerate(slaves)}
+    for slave in sorted_slaves:
+        i = slaves_to_index[slave]
         new_row = {}
-        for slave_ind, coef in zip(slaves[i], coefs[i]):
-            slave_row = dict_list[slave_ind]
-            for ind, val in slave_row.items():
+        for reference_ind, coef in zip(references[i], coefs[i]):
+            reference_row = dict_list[reference_ind]
+            for ind, val in reference_row.items():
                 if ind in new_row:
                     new_row[ind] += coef*val
                 else:
                     new_row[ind] = coef*val
         new_row = {ind: val for ind, val in new_row.items() if val!=0}
-        dict_list[master] = new_row
-        k[master] = np.dot(k[slaves[i]], coefs[i])
+        dict_list[slave] = new_row
+        k[slave] = np.dot(k[references[i]], coefs[i])
     
     # Convert list of dicts to COO
     nnz = sum([len(row) for row in dict_list])
