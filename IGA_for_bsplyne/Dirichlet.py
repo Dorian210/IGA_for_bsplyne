@@ -1,3 +1,4 @@
+from typing import Union
 import numpy as np
 import numpy.typing as npt
 import scipy.sparse as sps
@@ -113,7 +114,7 @@ class Dirichlet:
             self.C = C_coo.tocsc()
             self.k[inds] = vals
     
-    def slave_reference_linear_relation(self, slaves: np.ndarray[int], references: np.ndarray[int], coefs: np.ndarray[float]):
+    def slave_reference_linear_relation(self, slaves: np.ndarray[int], references: np.ndarray[int], coefs: Union[np.ndarray[float], None]=None):
         """
         This function modifies the sparse matrix `C` and the vector `k` to enforce 
         reference-slave constraints in an optimization problem. The goal is to eliminate 
@@ -128,10 +129,15 @@ class Dirichlet:
             Array of slave indices.
         references : np.ndarray[int]
             2D array where each row contains the reference indices controlling a slave.
-        coefs : np.ndarray[float]
+        coefs : Union[np.ndarray[float], None], optional
             2D array of coefficients defining the linear relationship between references and 
             slaves.
+            If None, the coefficients are set so that the slaves are the average of the references.
+            By default None.
         """
+        if coefs is None:
+            coefs = np.ones(references.shape, dtype='float')/references.shape[1]
+        
         sorted_slaves = slave_reference_linear_relation_sort(slaves, references)
         
         C = self.C.tocsr()

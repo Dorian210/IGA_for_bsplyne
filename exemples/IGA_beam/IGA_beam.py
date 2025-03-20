@@ -25,12 +25,12 @@ spline2 = BSpline(degrees, knots)
 ctrl_pts2 = np.stack(np.meshgrid([1, 2], [0, 1], [0, 1], indexing='ij'))
 ctrl_pts2 = spline2.orderElevation(ctrl_pts2, [2, 2, 2])
 ctrl_pts2 = spline2.knotInsertion(ctrl_pts2, [2, 2, 2])
-patch2 = IGAPatch(spline2, ctrl_pts2, E, nu, F_N=np.array([[[0, 0, -3e4],     # Force applied on xi front
-                                                            [0, 0,  0  ]],    # No force on xi back
-                                                           [[0, 0,  0  ],     # No force on eta front
-                                                            [0, 0,  0  ]],    # No force on eta back
-                                                           [[0, 0,  0  ],     # No force on zeta front
-                                                            [0, 0,  0  ]]]))  # No force on zeta back
+patch2 = IGAPatch(spline2, ctrl_pts2, E, nu, F_N=np.array([[[0, 0,  0  ],     # No force on xi back
+                                                            [0, 0, -3e4]],    # Force applied on xi front
+                                                           [[0, 0,  0  ],     # No force on eta back
+                                                            [0, 0,  0  ]],    # No force on eta front
+                                                           [[0, 0,  0  ],     # No force on zeta back
+                                                            [0, 0,  0  ]]]))  # No force on zeta front
 
 # Define multipatch connectivity
 separated_ctrl_pts = [ctrl_pts1, ctrl_pts2]

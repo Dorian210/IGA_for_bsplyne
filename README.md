@@ -1,5 +1,9 @@
 # IGA_for_bsplyne
 
+<p align="center">
+  <img src=docs/logo.png width="500" />
+</p>
+
 **IGA_for_bsplyne** is a Python library for 3D isogeometric analysis (IGA) applied to elasticity problems. This library builds upon the previous work from the [bsplyne](https://github.com/Dorian210/bsplyne) library and extends its capabilities for complex elasticity simulations.
 
 > **Note:** This library is not yet available on PyPI. To install, please clone the repository and install it manually.

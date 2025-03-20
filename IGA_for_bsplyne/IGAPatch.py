@@ -205,6 +205,17 @@ class IGAPatch:
                     rhs += np.outer(self.F_N[axis, side], intg).ravel()
         return rhs
     
+    def area_border(self, axis: int, front_side: bool) -> float:
+        XI = [self.xi, self.eta, self.zeta]
+        xi = [XI[i] if i!=axis else np.array([self.spline.bases[i].span[1] if front_side else self.spline.bases[i].span[0]]) for i in range(3)]
+        dXI = [self.dxi, self.deta, self.dzeta]
+        dxi = [dXI[i] for i in range(3) if i!=axis]
+        dN1, dN2 = [self.spline.DN(xi, k=k.tolist()) for ax, k in enumerate(np.eye(3)) if ax!=axis]
+        dSdXI = np.linalg.norm(np.cross(self.ctrl_pts.reshape((3, -1)) @ dN1.T, self.ctrl_pts.reshape((3, -1)) @ dN2.T, axis=0), axis=0)
+        dXI_area = np.outer(*dxi).ravel()
+        area = np.dot(dSdXI, dXI_area)
+        return area
+    
     def epsilon(self, U: npt.NDArray[np.float_], XI: list[npt.NDArray[np.float_]]) -> npt.NDArray[np.float_]:
         """
         Calculate the strain tensor (epsilon) for the IGAPatch based on 
