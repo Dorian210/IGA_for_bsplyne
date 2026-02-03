@@ -32,15 +32,19 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Dorian210/IGA"
-Repository = "https://github.com/Dorian210/IGA"
-Issues = "https://github.com/Dorian210/IGA/issues"
+Homepage = "https://github.com/Dorian210/IGA_for_bsplyne"
+Repository = "https://github.com/Dorian210/IGA_for_bsplyne"
+Issues = "https://github.com/Dorian210/IGA_for_bsplyne/issues"
 
 [project.optional-dependencies]
 dev = [
     "build",
     "twine",
     "pytest"
+]
+docs = [
+    "wkhtmltopdf",
+    "pdoc>=12.0"
 ]
 
 [tool.setuptools]
