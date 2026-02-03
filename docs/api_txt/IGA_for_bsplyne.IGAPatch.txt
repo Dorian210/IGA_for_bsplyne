@@ -1,0 +1,383 @@
+MODULE: IGA_for_bsplyne.IGAPatch
+================================
+Documentation du module IGA_for_bsplyne.IGAPatch
+
+CLASSE: IGAPatch
+----------------
+IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
+This class computes the stiffness matrix and the right hand side on one B-spline patch.
+
+Attributes
+----------
+spline : BSpline
+    B-spline volume object used as the patch.
+    Contains the methods to compte the shape functions.
+ctrl_pts : np.ndarray[np.floating]
+    Control points defining the patch geometry.
+E : float
+    Young's modulus of the material.
+nu : float
+    Poisson's ratio of the material.
+xi : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate xi.
+dxi : np.ndarray[np.floating]
+    Corresponding weights of xi.
+eta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate eta.
+deta : np.ndarray[np.floating]
+    Corresponding weights of eta.
+zeta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate zeta.
+dzeta : np.ndarray[np.floating]
+    Corresponding weights of zeta.
+F_N : np.ndarray[np.floating]
+    Surfacic forces applied on the corresponding side of the patch.
+
+  >>> __init__(
+    self,
+    spline: bsplyne.b_spline.BSpline,
+    ctrl_pts: numpy.ndarray[numpy.floating],
+    E: float,
+    nu: float,
+    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]]])
+)
+      Initialize the IGAPatch with the given parameters.
+      
+      Parameters
+      ----------
+      spline : BSpline
+          B-spline volume used as the patch.
+      ctrl_pts : np.ndarray[np.floating]
+          Control points defining the patch geometry.
+      E : float
+          Young's modulus of the material.
+      nu : float
+          Poisson's ratio of the material.
+      F_N : np.ndarray[np.floating], optional
+          Surfacic forces applied on the corresponding side of the patch.
+          Its shape should be (3(param), 2(side), 3(phy)).
+          By default np.zeros((3, 2, 3), dtype='float').
+
+  >>> jacobian(
+    self,
+    dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
+) -> tuple[numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating]]
+      Calculate the Jacobian matrix (derivative of the mesh wrt its isoparametric space),
+      its inverse, and its determinant.
+      
+      Parameters
+      ----------
+      dN_dXI : tuple[sps.spmatrix, sps.spmatrix, sps.spmatrix]
+          Tuple of sparse matrices representing the derivatives of shape
+          functions wrt the isoparametric space.
+          Contains dN_dxi, dN_deta and dN_dzeta.
+      
+      Returns
+      -------
+      J : np.ndarray[np.floating]
+          Jacobian matrix, with shape (3(phy), 3(param), nb_intg_pts).
+      Jinv : np.ndarray[np.floating]
+          Inverse of the Jacobian matrix, with shape (3(param), 3(phy), nb_intg_pts).
+      detJ : np.ndarray[np.floating]
+          Determinant of the Jacobian matrix, with shape (nb_intg_pts,).
+
+  >>> grad_N(
+    self,
+    Jinv: numpy.ndarray[numpy.floating],
+    dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
+) -> numpy.ndarray[numpy.object_]
+      Calculate the gradient of shape functions with respect to physical space.
+      
+      Parameters
+      ----------
+      Jinv : np.ndarray[np.floating]
+          Inverse of the Jacobian matrix, with shape (3(phy), 3(param), nb_intg_pts).
+      dN_dXI : tuple[sps.spmatrix, sps.spmatrix, sps.spmatrix]
+          Tuple of sparse matrices representing the derivatives of shape
+          functions with respect to the isoparametric space.
+      
+      Returns
+      -------
+      dN_dX : np.ndarray[np.object_]
+          Gradient of shape functions with respect to physical space.
+          Numpy array of shape (3(phy),) containing `sps.spmatrix` objects of shape (nb_intg_pts, nb_ctrl_pts).
+
+  >>> make_W(
+    self,
+    detJ: numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[numpy.floating]
+      Compute the measure for intagrating in the physical space as ( abs(det(dX_dXI))*dxi*deta*dzeta ).
+      This is the element-wise product of the absolute value of detJ and the Kronecker product
+      of dxi, deta, and dzeta.
+      
+      Parameters
+      ----------
+      detJ : np.ndarray[np.floating]
+          Array containing the determinant values.
+          Its shape is (nb_intg_pts,).
+      
+      Returns
+      -------
+      W : np.ndarray[np.floating]
+          Array containing the measure for intagrating in the physical space.
+          Its shape is (nb_intg_pts,).
+
+  >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
+      Calculate the stiffness matrix for the IGAPatch.
+      
+      Returns
+      -------
+      K : sps.spmatrix
+          Stiffness matrix computed based on the given parameters and operations.
+
+  >>> rhs(self) -> numpy.ndarray[numpy.floating]
+      Calculate the right-hand side (rhs) vector for the IGAPatch.
+      
+      Returns
+      -------
+      rhs : np.ndarray[np.floating]
+          The computed rhs vector based on the given parameters and operations.
+
+  >>> area_border(self, axis: int, front_side: bool) -> float
+
+  >>> epsilon(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+      Calculate the strain tensor (epsilon) for the IGAPatch based on
+      the displacement field `U` and the isoparametric coordinates `XI`.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      
+      XI : list[np.ndarray[np.floating]]
+          List of isoparametric coordinates for each direction xi, eta, and zeta.
+      
+      Returns
+      -------
+      eps : np.ndarray[np.floating]
+          Strain tensor epsilon in voight notation
+          computed as a numpy array of shape (6, nb_param_pts).
+
+  >>> sigma(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+      Calculate the stress tensor (sigma) for the IGAPatch based on
+      the displacement field `U` and the isoparametric coordinates `XI`.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      
+      XI : list[np.ndarray[np.floating]]
+          List of isoparametric coordinates for each direction xi, eta, and zeta.
+      
+      Returns
+      -------
+      sig : np.ndarray[np.floating]
+          Stress tensor sigma in voight notation
+          computed as a numpy array of shape (6, nb_param_pts).
+
+  >>> sigma_eig(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+      Calculate the eigenvalues of the stress tensor for the IGAPatch based on
+      the displacement field `U` and the isoparametric coordinates `XI`.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      
+      XI : list[np.ndarray[np.floating]]
+          List of isoparametric coordinates for each direction xi, eta, and zeta.
+      
+      Returns
+      -------
+      sig_eig : np.ndarray[np.floating]
+          Eigenvalues of the stress tensor computed as a numpy array of shape (nb_param_pts, 3).
+
+  >>> von_mises(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+      Calculate the von Mises stress for the IGAPatch based on the displacement field `U`
+      and the isoparametric coordinates `XI`.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      
+      XI : list[np.ndarray[np.floating]]
+          List of isoparametric coordinates for each direction xi, eta, and zeta.
+      
+      Returns
+      -------
+      vm : np.ndarray[np.floating]
+          Von Mises stress computed as a numpy array of shape (nb_param_pts,).
+
+  >>> save_paraview(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    path: str,
+    name: str,
+    n_eval_per_elem: int = 10
+)
+      Save data for visualization in ParaView.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      path : str
+          Path to save the data.
+      name : str
+          Name of the saved data.
+      n_eval_per_elem : int, optional
+          Number of evaluations per element, by default 10.
+
+  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+      Make data fields for visualization in ParaView.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+
+
+CLASSE: IGAPatchDensity
+-----------------------
+IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
+This class computes the stiffness matrix and the right hand side on one B-spline patch.
+
+Attributes
+----------
+spline : BSpline
+    B-spline volume object used as the patch.
+    Contains the methods to compte the shape functions.
+ctrl_pts : np.ndarray[np.floating]
+    Control points defining the patch geometry.
+E : float
+    Young's modulus of the material.
+nu : float
+    Poisson's ratio of the material.
+xi : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate xi.
+dxi : np.ndarray[np.floating]
+    Corresponding weights of xi.
+eta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate eta.
+deta : np.ndarray[np.floating]
+    Corresponding weights of eta.
+zeta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate zeta.
+dzeta : np.ndarray[np.floating]
+    Corresponding weights of zeta.
+F_N : np.ndarray[np.floating]
+    Surfacic forces applied on the corresponding side of the patch.
+
+  >>> __init__(
+    self,
+    spline: bsplyne.b_spline.BSpline,
+    ctrl_pts: numpy.ndarray[numpy.floating],
+    E: float,
+    nu: float,
+    d: numpy.ndarray[numpy.floating],
+    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]]])
+)
+      Initialize the IGAPatch with the given parameters.
+      
+      Parameters
+      ----------
+      spline : BSpline
+          B-spline volume used as the patch.
+      ctrl_pts : np.ndarray[np.floating]
+          Control points defining the patch geometry.
+      E : float
+          Young's modulus of the material.
+      nu : float
+          Poisson's ratio of the material.
+      F_N : np.ndarray[np.floating], optional
+          Surfacic forces applied on the corresponding side of the patch.
+          Its shape should be (3(param), 2(side), 3(phy)).
+          By default np.zeros((3, 2, 3), dtype='float').
+
+  >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
+      Calculate the stiffness matrix for the IGAPatch.
+      
+      Returns
+      -------
+      K : sps.spmatrix
+          Stiffness matrix computed based on the given parameters and operations.
+
+  >>> sigma(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+      Calculate the stress tensor (sigma) for the IGAPatch based on
+      the displacement field `U` and the isoparametric coordinates `XI`.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+      
+      XI : list[np.ndarray[np.floating]]
+          List of isoparametric coordinates for each direction xi, eta, and zeta.
+      
+      Returns
+      -------
+      sig : np.ndarray[np.floating]
+          Stress tensor sigma in voight notation
+          computed as a numpy array of shape (6, nb_param_pts).
+
+  >>> density(
+    self,
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+      Make data fields for visualization in ParaView.
+      
+      Parameters
+      ----------
+      U : np.ndarray[np.floating]
+          Displacement field as a numpy array of shape (3(phy), nb_ctrl_pts).
+
+
+FONCTIONS GLOBALES:
+~~~~~~~~~~~~~~~~~~
+  >>> compute_epsilon(patch_obj, u_patch, spline, XI)
+
+  >>> compute_sigma(patch_obj, u_patch, spline, XI)
+
+  >>> compute_sigma_eig(patch_obj, u_patch, spline, XI)
+
+  >>> compute_von_mises(patch_obj, u_patch, spline, XI)
+
+  >>> compute_density(patch_obj, spline, XI)

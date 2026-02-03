@@ -1,0 +1,3 @@
+MODULE: IGA_for_bsplyne
+=======================
+.. include:: ../README.md

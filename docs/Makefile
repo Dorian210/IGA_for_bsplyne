@@ -10,13 +10,16 @@ LOGO = logo.png
 # Output PDF filename
 OUTPUT_PDF = doc.pdf
 
+# Output txt directory
+OUTPUT_TXT = api_txt
+
 # File to store the HTTP server process ID
 SERVER_PID_FILE = server.pid
 
 .PHONY: all clean html pdf
 
 # Default command: generates both HTML and PDF documentation
-all: html pdf
+all: html txt pdf
 
 # Generate documentation using pdoc and correct the logo path
 html:
@@ -51,6 +54,16 @@ pdf:
 	kill $$SERVER_PID; \
 	rm -f $(SERVER_PID_FILE)
 
-# Clean up generated files (excluding Makefile and logo)
+txt:
+	@echo "Génération de l'API en format texte..."
+	@python3 make_txt.py $(notdir $(abspath $(PACKAGE))) -p $(dir $(abspath $(PACKAGE))) -o $(OUTPUT_TXT)
+
+# Nettoyage des fichiers générés (excluant Makefile, logo, script d'extraction)
 clean:
-	find $(DOC_DIR) -mindepth 1 ! -name 'Makefile' ! -name $(LOGO) -exec rm -rf {} +
+	@echo "Nettoyage des dossiers de documentation..."
+	@rm -rf $(OUTPUT_TXT)
+	@find $(DOC_DIR) -mindepth 1 \
+		! -name 'Makefile' \
+		! -name '$(LOGO)' \
+		! -name 'make_txt.py' \
+		-exec rm -rf {} +

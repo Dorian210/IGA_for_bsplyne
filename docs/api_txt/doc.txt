@@ -1,0 +1,397 @@
+================================================================
+DOCUMENTATION COMPLÈTE DE L'API : IGA_FOR_BSPLYNE
+================================================================
+
+
+
+MODULE: IGA_for_bsplyne
+=======================
+.. include:: ../README.md
+
+################################################################
+MODULE: IGA_for_bsplyne.Dirichlet
+=================================
+Documentation du module IGA_for_bsplyne.Dirichlet
+
+CLASSE: Dirichlet
+-----------------
+A class to handle Dirichlet boundary conditions (BC) for a problem using an affine mapping.
+
+The Dirichlet class provides methods to apply Dirichlet BCs by mapping degrees of freedom (dof)
+to displacements (u) using the relation `u = C @ dof + k`. It supports creating instances with
+identity mappings, locking specific displacement indices, and computing dof from displacements
+via least squares approximation.
+
+Attributes
+----------
+C : sps.csc_matrix
+    The matrix used in the affine mapping from `dof` to `u`.
+k : np.ndarray[np.floating]
+    The vector used in the affine mapping from `dof` to `u`.
+
+  >>> __init__(
+    self,
+    C: scipy.sparse._matrix.spmatrix,
+    k: numpy.ndarray[numpy.floating]
+)
+
+  >>> eye(cls, size: int)
+
+  >>> lock_disp_inds(
+    cls,
+    inds: numpy.ndarray[numpy.integer],
+    k: numpy.ndarray[numpy.floating]
+)
+
+  >>> set_u_inds_vals(
+    self,
+    inds: numpy.ndarray[numpy.integer],
+    vals: numpy.ndarray[numpy.floating]
+)
+
+  >>> slave_reference_linear_relation(
+    self,
+    slaves: numpy.ndarray[int],
+    references: numpy.ndarray[int],
+    coefs: Optional[numpy.ndarray[float]] = None
+)
+
+  >>> u_du_ddof(
+    self,
+    dof: numpy.ndarray[numpy.floating]
+) -> tuple[numpy.ndarray[numpy.floating], scipy.sparse._csc.csc_matrix]
+
+  >>> u(
+    self,
+    dof: numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> dof_lsq(self, u: numpy.ndarray[numpy.floating]) -> numpy.ndarray[numpy.floating]
+
+
+CLASSE: DirichletConstraintHandler
+----------------------------------
+Manage linear Dirichlet constraints for variational or optimization problems.
+
+This class accumulates linear equations of the form `D @ u = c` representing Dirichlet
+boundary conditions or linear relationships between degrees of freedom (DOFs), and
+computes a reduced basis representation that parametrizes the set of admissible solutions.
+
+Specifically, it computes matrices `C` and `k` such that any vector `u` satisfying
+`D @ u = c` can be written as:
+
+    u = C @ dof + k
+
+where `dof` is a reduced vector of free parameters.
+
+Attributes
+----------
+nb_dofs_init : int
+    Number of DOFs in the original unconstrained system, before adding any reference DOFs.
+lhs : sps.spmatrix
+    Accumulated constraint matrix D (left-hand side of the Dirichlet conditions).
+rhs : np.ndarray[np.floating]
+    Accumulated right-hand side vector c of the Dirichlet conditions.
+
+  >>> __init__(self, nb_dofs_init: int)
+
+  >>> copy(self) -> IGA_for_bsplyne.Dirichlet.DirichletConstraintHandler
+
+  >>> add_eqs(
+    self,
+    lhs: scipy.sparse._matrix.spmatrix,
+    rhs: numpy.ndarray[numpy.floating]
+)
+
+  >>> add_ref_dofs(self, nb_dofs: int)
+
+  >>> add_ref_dofs_with_behavior(
+    self,
+    behavior_mat: scipy.sparse._matrix.spmatrix,
+    slave_inds: numpy.ndarray[numpy.integer]
+)
+
+  >>> add_rigid_body_constraint(
+    self,
+    ref_point: numpy.ndarray[numpy.floating],
+    slaves_inds: numpy.ndarray[numpy.integer],
+    slaves_positions: numpy.ndarray[numpy.floating]
+)
+
+  >>> add_eqs_from_inds_vals(
+    self,
+    inds: numpy.ndarray[numpy.integer],
+    vals: numpy.ndarray[numpy.floating] = None
+)
+
+  >>> make_C_k(
+    self
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+
+  >>> get_reduced_Ck(self) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray]
+
+  >>> create_dirichlet(self)
+
+  >>> get_ref_multipliers_from_internal_residual(self, K_u_minus_f)
+
+
+FONCTIONS GLOBALES:
+~~~~~~~~~~~~~~~~~~
+  >>> slave_reference_linear_relation_sort(
+    slaves: numpy.ndarray[int],
+    references: numpy.ndarray[int]
+) -> numpy.ndarray[int]
+
+  >>> slave_reference_linear_relation_inner(
+    indices: numpy.ndarray[int],
+    indptr: numpy.ndarray[int],
+    data: numpy.ndarray[float],
+    k: numpy.ndarray[float],
+    slaves: numpy.ndarray[int],
+    references: numpy.ndarray[int],
+    coefs: numpy.ndarray[float],
+    sorted_slaves: numpy.ndarray[int]
+) -> tuple[numpy.ndarray[int], numpy.ndarray[int], numpy.ndarray[float], numpy.ndarray[float]]
+
+################################################################
+MODULE: IGA_for_bsplyne.IGAPatch
+================================
+Documentation du module IGA_for_bsplyne.IGAPatch
+
+CLASSE: IGAPatch
+----------------
+IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
+This class computes the stiffness matrix and the right hand side on one B-spline patch.
+
+Attributes
+----------
+spline : BSpline
+    B-spline volume object used as the patch.
+    Contains the methods to compte the shape functions.
+ctrl_pts : np.ndarray[np.floating]
+    Control points defining the patch geometry.
+E : float
+    Young's modulus of the material.
+nu : float
+    Poisson's ratio of the material.
+xi : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate xi.
+dxi : np.ndarray[np.floating]
+    Corresponding weights of xi.
+eta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate eta.
+deta : np.ndarray[np.floating]
+    Corresponding weights of eta.
+zeta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate zeta.
+dzeta : np.ndarray[np.floating]
+    Corresponding weights of zeta.
+F_N : np.ndarray[np.floating]
+    Surfacic forces applied on the corresponding side of the patch.
+
+  >>> __init__(
+    self,
+    spline: bsplyne.b_spline.BSpline,
+    ctrl_pts: numpy.ndarray[numpy.floating],
+    E: float,
+    nu: float,
+    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]]])
+)
+
+  >>> jacobian(
+    self,
+    dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
+) -> tuple[numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating]]
+
+  >>> grad_N(
+    self,
+    Jinv: numpy.ndarray[numpy.floating],
+    dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
+) -> numpy.ndarray[numpy.object_]
+
+  >>> make_W(
+    self,
+    detJ: numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
+
+  >>> rhs(self) -> numpy.ndarray[numpy.floating]
+
+  >>> area_border(self, axis: int, front_side: bool) -> float
+
+  >>> epsilon(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> sigma(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> sigma_eig(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> von_mises(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> save_paraview(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    path: str,
+    name: str,
+    n_eval_per_elem: int = 10
+)
+
+  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+
+
+CLASSE: IGAPatchDensity
+-----------------------
+IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
+This class computes the stiffness matrix and the right hand side on one B-spline patch.
+
+Attributes
+----------
+spline : BSpline
+    B-spline volume object used as the patch.
+    Contains the methods to compte the shape functions.
+ctrl_pts : np.ndarray[np.floating]
+    Control points defining the patch geometry.
+E : float
+    Young's modulus of the material.
+nu : float
+    Poisson's ratio of the material.
+xi : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate xi.
+dxi : np.ndarray[np.floating]
+    Corresponding weights of xi.
+eta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate eta.
+deta : np.ndarray[np.floating]
+    Corresponding weights of eta.
+zeta : np.ndarray[np.floating]
+    Discretization of the isoparametric coordinate zeta.
+dzeta : np.ndarray[np.floating]
+    Corresponding weights of zeta.
+F_N : np.ndarray[np.floating]
+    Surfacic forces applied on the corresponding side of the patch.
+
+  >>> __init__(
+    self,
+    spline: bsplyne.b_spline.BSpline,
+    ctrl_pts: numpy.ndarray[numpy.floating],
+    E: float,
+    nu: float,
+    d: numpy.ndarray[numpy.floating],
+    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]],
+
+       [[0., 0., 0.],
+        [0., 0., 0.]]])
+)
+
+  >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
+
+  >>> sigma(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> density(
+    self,
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> numpy.ndarray[numpy.floating]
+
+  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+
+
+FONCTIONS GLOBALES:
+~~~~~~~~~~~~~~~~~~
+  >>> compute_epsilon(patch_obj, u_patch, spline, XI)
+
+  >>> compute_sigma(patch_obj, u_patch, spline, XI)
+
+  >>> compute_sigma_eig(patch_obj, u_patch, spline, XI)
+
+  >>> compute_von_mises(patch_obj, u_patch, spline, XI)
+
+  >>> compute_density(patch_obj, spline, XI)
+
+################################################################
+MODULE: IGA_for_bsplyne.ProblemIGA
+==================================
+Documentation du module IGA_for_bsplyne.ProblemIGA
+
+CLASSE: ProblemIGA
+------------------
+ProblemIGA class to compute linear elasticity on 3D multipatch B-spline volumes.
+This class computes the stiffness matrix and the right hand side and solves the linear problem.
+
+Attributes
+----------
+patches : list[IGAPatch]
+    List of IGAPatch objects representing the patches for the ProblemIGA.
+connectivity : MultiPatchBSplineConnectivity
+    MultiPatchBSplineConnectivity object defining the connectivity information.
+dirichlet : Dirichlet
+    Dirichlet object specifying the Dirichlet boundary conditions.
+
+  >>> __init__(
+    self,
+    patches: list[IGA_for_bsplyne.IGAPatch.IGAPatch],
+    connectivity: bsplyne.multi_patch_b_spline.MultiPatchBSplineConnectivity,
+    dirichlet: IGA_for_bsplyne.Dirichlet.Dirichlet
+)
+
+  >>> lhs_rhs(
+    self,
+    verbose: bool = False,
+    disable_parallel: bool = False
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+
+  >>> apply_dirichlet(
+    self,
+    lhs: scipy.sparse._matrix.spmatrix,
+    rhs: numpy.ndarray[numpy.floating],
+    verbose: bool = False
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+
+  >>> solve_from_lhs_rhs(
+    self,
+    lhs: scipy.sparse._matrix.spmatrix,
+    rhs: numpy.ndarray[numpy.floating],
+    iterative_solve: bool = False,
+    verbose: bool = True
+) -> numpy.ndarray[numpy.floating]
+
+  >>> solve(self, iterative_solve=False) -> numpy.ndarray[numpy.floating]
+
+  >>> save_paraview(
+    self,
+    u: numpy.ndarray[numpy.floating],
+    path: str,
+    name: str,
+    n_eval_per_elem: int = 10
+)
+

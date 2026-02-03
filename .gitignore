@@ -1,4 +1,35 @@
-.qodo
-IGA_for_bsplyne.egg-info
-build
-__pycache__
+# Python
+__pycache__/
+*.py[cod]
+
+# Numba
+*.nbc
+*.nbi
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Pytest
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+.env/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# Generated files (examples)
+*.vtu
+*.pvd
+
+# OS
+.DS_Store
+
+# Personnal
+maths

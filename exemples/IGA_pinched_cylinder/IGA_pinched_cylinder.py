@@ -93,7 +93,7 @@ plotter.show()
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from IGA.IGAPatch import IGAPatch
+from IGA_for_bsplyne.IGAPatch import IGAPatch
 
 
 E, nu = 3e6, 0.3
@@ -132,9 +132,8 @@ print(f"Relative error of the reference displacement : {abs((-u[-1] - ref_displ)
 
 # %%
 from bsplyne import MultiPatchBSplineConnectivity
-from IGA.ProblemIGA import ProblemIGA
-from multipatch_solver.Dirichlet import Dirichlet
-from mesh_formating.merge_saves import merge_saves
+from IGA_for_bsplyne.ProblemIGA import ProblemIGA
+from IGA_for_bsplyne.Dirichlet import Dirichlet
 
 splines = [spline]*8
 separated_ctrl_pts = [ctrl_pts*np.array([[[[ 1]]], [[[ 1]]], [[[ 1]]]]), 
@@ -186,4 +185,5 @@ print(f"Relative error of the reference displacement : {abs((u[2, node_ind] - re
 
 # Save to Paraview
 pb.save_paraview(u, out_folder, "IGA_multipatch")
-merge_saves(out_folder, "IGA_multipatch", connectivity.nb_patchs, 1, ["interior", "elements_borders", "control_points"])
+
+# %%
