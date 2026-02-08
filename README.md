@@ -4,9 +4,6 @@
   <img src="https://raw.githubusercontent.com/Dorian210/IGA_for_bsplyne/main/docs/logo.png" width="500" />
 </p>
 
-[![PyPI version](https://img.shields.io/pypi/v/IGA_for_bsplyne.svg)](https://pypi.org/project/IGA_for_bsplyne/)
-[![License](https://img.shields.io/badge/License-CeCILL-blue.svg)](LICENSE.txt)
-
 **IGA_for_bsplyne** is a high-performance Python library for 3D Isogeometric Analysis (IGA) applied to linear elasticity. It bridges the gap between Computer-Aided Design (CAD) and Finite Element Analysis (FEA) by using B-Spline basis functions directly as the approximation space for structural mechanics.
 
 This library extends the geometric foundations of [bsplyne](https://github.com/Dorian210/bsplyne) to provide a complete multipatch IGA solver pipeline.
