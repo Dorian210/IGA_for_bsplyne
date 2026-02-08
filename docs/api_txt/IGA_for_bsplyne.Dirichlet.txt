@@ -1,86 +1,143 @@
 MODULE: IGA_for_bsplyne.Dirichlet
 =================================
-Documentation du module IGA_for_bsplyne.Dirichlet
+Documentation for module IGA_for_bsplyne.Dirichlet
 
-CLASSE: Dirichlet
+CLASS: Dirichlet
 -----------------
-A class to handle Dirichlet boundary conditions (BC) for a problem using an affine mapping.
+Affine representation of linear Dirichlet constraints.
 
-The Dirichlet class provides methods to apply Dirichlet BCs by mapping degrees of freedom (dof)
-to displacements (u) using the relation `u = C @ dof + k`. It supports creating instances with
-identity mappings, locking specific displacement indices, and computing dof from displacements
-via least squares approximation.
+This class represents Dirichlet boundary conditions through an affine
+transformation between a reduced vector of free parameters (`dof`)
+and the full physical displacement vector (`u`):
+
+    u = C @ dof + k
+
+where:
+
+- `u` is the full displacement vector satisfying all imposed constraints.
+- `dof` is the reduced vector of unconstrained degrees of freedom.
+- `C` is a sparse matrix whose columns form a basis of admissible variations.
+- `k` is a particular displacement vector satisfying the constraints.
+
+This representation allows:
+- elimination of constrained DOFs,
+- support for general linear multi-point constraints.
 
 Attributes
 ----------
-C : sps.csc_matrix
-    The matrix used in the affine mapping from `dof` to `u`.
-k : np.ndarray[np.floating]
-    The vector used in the affine mapping from `dof` to `u`.
+C : sps.csc_matrix of shape (n_full_dofs, n_free_dofs)
+    Sparse matrix defining the linear mapping from reduced DOFs to full DOFs.
+k : np.ndarray of shape (n_full_dofs,)
+    Particular solution ensuring that `u` satisfies the Dirichlet constraints.
 
   >>> __init__(
     self,
     C: scipy.sparse._matrix.spmatrix,
     k: numpy.ndarray[numpy.floating]
 )
-      Initializes a Dirichlet instance with the given matrix and vector for affine mapping.
+      Initialize an affine Dirichlet constraint representation.
       
       Parameters
       ----------
-      C : sps.spmatrix of float
-          The matrix used to map degrees of freedom `dof` to displacements `u`.
+      C : sps.spmatrix
+          Sparse matrix of shape (n_full_dofs, n_free_dofs) defining
+          the linear mapping from reduced DOFs to full DOFs.
       k : np.ndarray[np.floating]
-          The vector used to map degrees of freedom `dof` to displacements `u`.
+          Vector of shape (n_full_dofs,) defining the affine offset.
+      
+      Notes
+      -----
+      The matrix `C` is internally converted to CSC format for efficient
+      matrix-vector products.
 
   >>> eye(cls, size: int)
-      Create a `Dirichlet` instance with an identity mapping, where no degrees of freedom `dof` are locked.
-      Sets `C` to the identity matrix and `k` to a zero-filled vector.
+      Create an unconstrained Dirichlet mapping.
+      
+      This method returns a `Dirichlet` object corresponding to the identity
+      transformation:
+      
+          u = dof
+      
+      i.e. no Dirichlet constraints are applied.
       
       Parameters
       ----------
       size : int
-          Size of the `dof` and `u` vectors.
+          Number of degrees of freedom.
       
       Returns
       -------
       dirichlet : Dirichlet
-          The identity `Dirichlet` instance.
+          Identity `Dirichlet` object with:
+          - C = identity(size)
+          - k = 0
 
   >>> lock_disp_inds(
     cls,
     inds: numpy.ndarray[numpy.integer],
     k: numpy.ndarray[numpy.floating]
 )
-      Creates a `Dirichlet` instance with specified displacement `u` indices locked to given values.
+      Create Dirichlet constraints by prescribing displacement values at selected DOFs.
+      
+      This method enforces pointwise Dirichlet conditions of the form:
+      
+          u[i] = k[i]    for i in inds
+      
+      All other DOFs remain unconstrained.
       
       Parameters
       ----------
       inds : np.ndarray[np.integer]
-          Indices of the displacement field `u` to be locked.
+          Indices of the displacement vector `u` to be constrained.
       k : np.ndarray[np.floating]
-          Values to lock the specified indices of `u` to.
-          After this, `u[inds]` are set to `k[inds]` while other compontents are left free.
+          Target displacement vector of shape (n_full_dofs,). Only the
+          values at `inds` are enforced.
       
       Returns
       -------
       dirichlet : Dirichlet
-          A `Dirichlet` instance with specified displacements locked.
+          `Dirichlet` instance representing the prescribed displacement constraints.
+      
+      Notes
+      -----
+      Constrained DOFs are removed from the reduced DOF vector. The resulting
+      number of reduced DOFs will therefore be smaller than `k.size`.
 
   >>> set_u_inds_vals(
     self,
     inds: numpy.ndarray[numpy.integer],
     vals: numpy.ndarray[numpy.floating]
 )
-      Locks specified indices of the displacement field `u` to given values by modifying
-      the matrix `C` and vector `k` accordingly. This involves zeroing out the specified
-      rows in `C` and adjusting `k` to reflect the locked values.
+      Impose pointwise Dirichlet conditions by prescribing displacement values
+      at selected full DOFs.
+      
+      This method enforces constraints of the form:
+      
+          u[i] = vals[j]     for i = inds[j]
+      
+      by modifying the affine mapping:
+      
+          u = C @ dof + k
+      
+      The modification removes the corresponding admissible variations in `C`
+      and updates `k` so that the prescribed values are always satisfied.
+      As a result, constrained DOFs are eliminated from the reduced DOF vector.
       
       Parameters
       ----------
       inds : np.ndarray[np.integer]
-          Indices of the displacement field `u` to be locked.
+          Indices of the full displacement vector `u` to constrain.
       vals : np.ndarray[np.floating]
-          Values to lock the specified indices of `u` to.
+          Prescribed displacement values associated with `inds`.
+          Must have the same length as `inds`.
+      
+      Notes
+      -----
+      - Rows of `C` corresponding to constrained DOFs are zeroed.
+      - Columns of `C` that become unused are removed, which may reduce
+        the number of reduced DOFs.
+      - The affine offset `k` is updated to enforce the prescribed values.
+      - This operation modifies the current Dirichlet object in place.
 
   >>> slave_reference_linear_relation(
     self,
@@ -88,97 +145,205 @@ k : np.ndarray[np.floating]
     references: numpy.ndarray[int],
     coefs: Optional[numpy.ndarray[float]] = None
 )
-      This function modifies the sparse matrix `C` and the vector `k` to enforce
-      reference-slave constraints in an optimization problem. The goal is to eliminate
-      the degrees of freedom (DOFs) associated with slave nodes, keeping only the reference
-      DOFs. The relation `u = C@dof + k` is updated so that slave DOFs are expressed as
-      linear combinations of reference DOFs, reducing the problem's size while maintaining
-      the imposed constraints.
+      Impose linear multi-point constraints between full DOFs.
+      
+      This method enforces relations of the form:
+      
+          u[slave_i] = sum_j coefs[i, j] * u[references[i, j]]
+      
+      by modifying the affine mapping:
+      
+          u = C @ dof + k
+      
+      Slave DOFs are expressed as linear combinations of reference DOFs.
+      The corresponding admissible variations are propagated into `C`
+      and `k`, effectively eliminating slave DOFs from the reduced parameter
+      vector while preserving the imposed constraints.
       
       Parameters
       ----------
-      slaves : np.ndarray[int]
-          Array of slave indices.
-      references : np.ndarray[int]
-          2D array where each row contains the reference indices controlling a slave.
-      coefs : Union[np.ndarray[float], None], optional
-          2D array of coefficients defining the linear relationship between references and
-          slaves.
-          If None, the coefficients are set so that the slaves are the average of the references.
-          By default None.
+      slaves : np.ndarray[int] of shape (n_slaves,)
+          Indices of DOFs that are constrained (slave DOFs).
+      references : np.ndarray[int] of shape (n_slaves, n_refs)
+          Reference DOF indices controlling each slave DOF.
+          Row `i` contains the references associated with `slaves[i]`.
+      coefs : np.ndarray[float], optional, shape (n_slaves, n_refs)
+          Linear combination coefficients linking references to slaves.
+          If None, slaves are defined as the average of their references.
+      
+      Notes
+      -----
+      - Slave DOFs are removed from the reduced DOF vector.
+      - The constraint propagation accounts for hierarchical dependencies
+        between slave DOFs using a topological ordering.
+      - This operation is typically faster than using `DirichletConstraintHandler`,
+        as it directly modifies the affine mapping without constructing
+        intermediate constraint objects.
+      - Cyclic dependencies between slaves are not supported and will raise an error.
+      - This operation modifies the current Dirichlet object in place.
+      
+      Examples
+      --------
+      To impose u[i] = 0.5 * (u[j] + u[k]):
+      
+      >>> slaves = np.array([i])
+      >>> references = np.array([[j, k]])
+      >>> coefs = np.array([[0.5, 0.5]])
+      >>> dirichlet.slave_reference_linear_relation(slaves, references, coefs)
 
   >>> u_du_ddof(
     self,
     dof: numpy.ndarray[numpy.floating]
 ) -> tuple[numpy.ndarray[numpy.floating], scipy.sparse._csc.csc_matrix]
-      Computes the displacement field `u` and its derivative with respect to the degrees of freedom `dof`.
-      The displacement field is calculated as `u = C @ dof + k`, and its derivative is `C`.
+      Evaluate the displacement field and its derivative with respect to the reduced DOFs.
+      
+      The displacement field is obtained from the affine mapping:
+      
+          u = C @ dof + k
+      
+      Since the mapping is affine, the derivative of `u` with respect to `dof`
+      is constant and equal to `C`.
       
       Parameters
       ----------
-      dof : np.ndarray[np.floating]
-          The degrees of freedom of the problem, representing the input to the affine mapping.
+      dof : np.ndarray[np.floating] of shape (n_dof,)
+          Reduced degrees of freedom.
       
       Returns
       -------
-      u, du_ddof : tuple[np.ndarray[np.floating], sps.csc_matrix]
-          A tuple containing the displacement field `u` and its derivative with respect to `dof`.
+      u : np.ndarray[np.floating] of shape (n_u,)
+          Displacement field.
+      du_ddof : sps.csc_matrix of shape (n_u, n_dof)
+          Jacobian of `u` with respect to `dof` : the matrix `C`.
+      
+      Notes
+      -----
+      The returned derivative is independent of `dof` because the mapping is affine.
 
   >>> u(
     self,
     dof: numpy.ndarray[numpy.floating]
 ) -> numpy.ndarray[numpy.floating]
-      Computes the displacement field `u` using the affine mapping `u = C @ dof + k`.
+      Evaluate the displacement field from reduced DOFs.
+      
+      The displacement field is computed using the affine mapping:
+      
+          u = C @ dof + k
       
       Parameters
       ----------
       dof : np.ndarray[np.floating]
-          The degrees of freedom of the problem, representing the input to the affine mapping.
+          Reduced degrees of freedom. Can be either:
+      
+          - shape (n_dof,)
+          - shape (..., n_dof) for batched evaluation
       
       Returns
       -------
       u : np.ndarray[np.floating]
-          The computed displacement field `u`.
+          Displacement field with shape:
+      
+          - (n_u,) if `dof` is 1D
+          - (..., n_u) if `dof` is batched
+      
+      Notes
+      -----
+      This method supports vectorized evaluation over multiple DOF vectors.
 
   >>> dof_lsq(self, u: numpy.ndarray[numpy.floating]) -> numpy.ndarray[numpy.floating]
-      Computes the degrees of freedom `dof` from the displacement field `u` using a least squares approximation.
-      This method performs a least squares 'inversion' of the affine mapping `u = C @ dof + k`.
-      It solves the linear problem `C.T @ C @ dof = C.T @ (u - k)` for `dof`.
+      Compute reduced DOFs from a displacement field using a least-squares projection.
+      
+      This method computes `dof` such that:
+      
+          u ≈ C @ dof + k
+      
+      by solving the normal equations:
+      
+          (Cᵀ C) dof = Cᵀ (u - k)
       
       Parameters
       ----------
       u : np.ndarray[np.floating]
-          The displacement field from which to compute the degrees of freedom.
+          Displacement field. Can be either:
+      
+          - shape (n_u,)
+          - shape (..., n_u) for batched projection
       
       Returns
       -------
       dof : np.ndarray[np.floating]
-          The computed degrees of freedom corresponding to the given displacement field.
+          Reduced degrees of freedom with shape:
+      
+          - (n_dof,) if `u` is 1D
+          - (..., n_dof) if `u` is batched
+      
+      Notes
+      -----
+      This operation performs a least-squares inversion of the affine mapping.
+      If `C` does not have full column rank, the solution corresponds to a
+      minimum-norm least-squares solution.
+      
+      The system `(Cᵀ C)` is solved using a sparse linear solver.
 
 
-CLASSE: DirichletConstraintHandler
+CLASS: DirichletConstraintHandler
 ----------------------------------
-Manage linear Dirichlet constraints for variational or optimization problems.
+Accumulate affine linear constraints and construct the associated Dirichlet mapping.
 
-This class accumulates linear equations of the form `D @ u = c` representing Dirichlet
-boundary conditions or linear relationships between degrees of freedom (DOFs), and
-computes a reduced basis representation that parametrizes the set of admissible solutions.
+This class is designed to impose linear affine constraints of the form:
 
-Specifically, it computes matrices `C` and `k` such that any vector `u` satisfying
-`D @ u = c` can be written as:
+    D @ u = c
+
+where `u` is the full displacement (or state) vector. Constraints are progressively
+accumulated and, once fully specified, converted into an affine parametrization of
+the admissible solution space:
 
     u = C @ dof + k
 
-where `dof` is a reduced vector of free parameters.
+where:
+
+- `C` is a basis of the nullspace of `D` (i.e. `D @ C = 0`) obtained by
+QR decomposition,
+- `k` is a particular solution satisfying the constraints,
+obtained through the QR decomposition which helps solve:
+
+    D k = c
+
+- `dof` is a reduced vector of unconstrained degrees of freedom.
+
+The main purpose of this class is to provide a flexible and robust interface
+to define constraints before constructing a `Dirichlet` object representing
+the reduced parametrization.
+
+Typical workflow
+----------------
+1. Create a handler with the number of physical DOFs (`u`).
+2. Add constraint equations using helper methods.
+3. **Ensure that all reference DOFs (e.g., translations or rotations introduced for
+rigid-body relations) are fully constrained before computing `C` and `k`.**
+4. Build the reduced representation `(C, k)` or directly create a `Dirichlet` object.
+
+This separation allows constraints to be assembled incrementally and validated
+before generating the final affine mapping.
 
 Attributes
 ----------
 nb_dofs_init : int
-    Number of DOFs in the original unconstrained system, before adding any reference DOFs.
+    Number of DOFs in the original unconstrained system (physical DOFs `u`).
 lhs : sps.spmatrix
-    Accumulated constraint matrix D (left-hand side of the Dirichlet conditions).
+    Accumulated constraint matrix `D`.
 rhs : np.ndarray[np.floating]
-    Accumulated right-hand side vector c of the Dirichlet conditions.
+    Accumulated right-hand side vector `c`.
+
+Notes
+-----
+- The constraint system may include additional reference DOFs introduced
+to express kinematic relations or rigid-body behaviors.
+- **All reference DOFs must be fully constrained before computing `C` and `k`;**
+otherwise, DOFs that lie in the kernel of `D` cannot be controlled and imposed values
+(e.g., prescribed translations) may not appear in the resulting solution `k`.
+- The resulting affine mapping guarantees that any generated vector `u`
+satisfies all imposed constraints.
 
   >>> __init__(self, nb_dofs_init: int)
       Initialize a Dirichlet constraint handler.
@@ -204,65 +369,92 @@ rhs : np.ndarray[np.floating]
     lhs: scipy.sparse._matrix.spmatrix,
     rhs: numpy.ndarray[numpy.floating]
 )
-      Add linear constraint equations of the form D_new @ u = c_new.
+      Append linear affine constraint equations to the global constraint system.
       
-      Appends the given equations to the existing Dirichlet constraint system.
-      If the number of columns in `lhs` matches the initial DOF count, it is
-      automatically extended with zero-padding to match the current DOF count
-      (in case reference DOFs have been added).
+      Adds equations of the form:
+      
+          lhs @ u = rhs
+      
+      to the accumulated constraint system `D @ u = c`.
+      
+      If `lhs` is expressed only in terms of the initial physical DOFs
+      (`nb_dofs_init` columns), it is automatically extended with zero-padding
+      to match the current number of DOFs (e.g. after reference DOFs have been added).
       
       Parameters
       ----------
-      lhs : sps.spmatrix
-          Constraint matrix D_new of shape (n_eqs, nb_dofs) to be added to the system.
-      rhs : np.ndarray[np.floating]
-          Right-hand side values c_new of shape (n_eqs,) corresponding to the constraint.
+      lhs : sps.spmatrix of shape (n_eqs, n_dofs)
+          Constraint matrix defining the left-hand side of the equations.
+          The number of columns must match either:
+          - the initial number of DOFs (`nb_dofs_init`), or
+          - the current number of DOFs in the handler.
+      
+      rhs : np.ndarray[np.floating] of shape (n_eqs,)
+          Right-hand side values associated with the constraint equations.
       
       Raises
       ------
       ValueError
-          If the number of columns in `lhs` does not match the initial or current DOF count.
+          If the number of columns of `lhs` is incompatible with the current
+          constraint system.
+      
+      Notes
+      -----
+      Constraints are appended to the existing system and are not simplified
+      or checked for redundancy.
 
   >>> add_ref_dofs(self, nb_dofs: int)
-      Extend the system by adding new reference DOFs.
+      Append additional reference DOFs to the constraint system.
       
-      This increases the number of columns in the constraint matrix by `nb_dofs`,
-      initializing them with zeros in all existing constraint equations.
+      This method increases the size of the global DOF vector by adding
+      `nb_dofs` new reference DOFs. These DOFs are introduced without
+      imposing any constraint, i.e. they appear with zero coefficients
+      in all existing equations.
       
       Parameters
       ----------
       nb_dofs : int
-          Number of new reference DOFs to append at the end of the current DOF vector.
+          Number of reference DOFs to append to the global DOF vector.
+      
+      Notes
+      -----
+      Reference DOFs are typically used to express kinematic relations,
+      rigid body motions, or other auxiliary constraint parametrizations.
 
   >>> add_ref_dofs_with_behavior(
     self,
     behavior_mat: scipy.sparse._matrix.spmatrix,
     slave_inds: numpy.ndarray[numpy.integer]
 )
-      Add new reference DOFs and define their influence on existing DOFs via a behavioral relation.
+      Introduce reference DOFs and constrain slave DOFs through a linear relation.
       
-      This method appends new reference DOFs and enforces their relationship to existing
-      DOFs (called "slaves") through a linear behavior matrix `behavior_mat`. The resulting constraints
-      take the form:
+      This method appends new reference DOFs and enforces a linear behavioral
+      relation linking these reference DOFs to existing DOFs (called *slave DOFs*).
+      The imposed constraints take the form:
       
-          `behavior_mat @ ref_dofs - u[slave_inds] = 0`
+          behavior_mat @ ref_dofs - u[slave_inds] = 0
       
-      and are added to the global constraint system.
       
       Parameters
       ----------
-      behavior_mat : sps.spmatrix
-          Matrix of shape `(n_slaves, n_ref_dofs)` defining how each reference DOF influences
-          the corresponding slave DOFs.
+      behavior_mat : sps.spmatrix of shape (n_slaves, n_ref_dofs)
+          Linear operator defining how each reference DOF contributes to the
+          corresponding slave DOFs.
       
-      slave_inds : np.ndarray[np.integer]
-          Indices of the slave DOFs. Must have length `n_slaves` and must be in the same
-          order as the rows of `behavior_mat`.
+      slave_inds : np.ndarray[np.integer] of shape (n_slaves,)
+          Indices of slave DOFs that are controlled by the reference DOFs.
+          The ordering must match the rows of `behavior_mat`.
       
       Raises
       ------
       AssertionError
-          If the number of rows in `behavior_mat` does not match the size of `slave_inds`.
+          If the number of slave DOFs is inconsistent with the number of
+          rows of `behavior_mat`.
+      
+      Notes
+      -----
+      This method first adds the reference DOFs to the global system and then
+      appends the corresponding constraint equations.
 
   >>> add_rigid_body_constraint(
     self,
@@ -270,139 +462,197 @@ rhs : np.ndarray[np.floating]
     slaves_inds: numpy.ndarray[numpy.integer],
     slaves_positions: numpy.ndarray[numpy.floating]
 )
-      Add a reference node and impose a rigid body motion constraint on a set of slave nodes.
+      Constrain slave nodes to follow a rigid body motion defined by a reference point.
       
-      This method introduces new reference degrees of freedom (DOFs) corresponding to a reference node
-      located at `ref_point`, and constrains the displacements of a set of slave nodes (given by
-      `nodes_inds` and `nodes_positions`) to follow a rigid body motion defined by the reference node.
-      The rigid body motion includes both translation and rotation about the reference point.
+      This method introduces six reference DOFs representing a rigid body motion:
+      three rotations and three translations (in this order) around a reference point.
+      The displacement of each slave node is constrained to follow the rigid body motion:
       
-      The imposed constraint ensures that the displacement of each slave node is a linear combination of
-      the reference node's translation and rotation, enforcing a rigid connection between the reference
-      and the slaves.
+          u(X) = θ × (X - X_ref) + t
+      
+      where `θ` is the rotation vector and `t` is the translation vector.
       
       Parameters
       ----------
-      ref_point : np.ndarray[np.floating]
-          Reference point (origin for rotation and translation), array of shape (3,) representing (x, y, z).
-      slaves_inds : np.ndarray[np.integer]
-          Indices of the degrees of freedom of the slave displacements.
-          Shape (3, n), where n is the number of slave nodes; each column contains the x, y, z DOF indices for a node.
-      slaves_positions : np.ndarray[np.floating]
-          Initial positions of the slave nodes.
-          Shape (3, n), where each column contains the (x, y, z) coordinates of a slave node in the physical space.
+      ref_point : np.ndarray[np.floating] of shape (3,)
+          Reference point defining the center of rotation.
+      
+      slaves_inds : np.ndarray[np.integer] of shape (3, n_nodes)
+          DOF indices of the slave nodes. Each column contains the
+          x, y, z DOF indices of a slave node.
+      
+      slaves_positions : np.ndarray[np.floating] of shape (3, n_nodes)
+          Physical coordinates of the slave nodes.
+      
+      Notes
+      -----
+      - Six reference DOFs (θx, θy, θz, tx, ty, tz) are added to represent
+        the rigid body motion.
+      - The constraint is expressed as a linear relation between the
+        reference DOFs and the slave displacements.
+      - This method is commonly used to impose rigid connections,
+        master node formulations, or reference frame constraints.
 
   >>> add_eqs_from_inds_vals(
     self,
     inds: numpy.ndarray[numpy.integer],
     vals: numpy.ndarray[numpy.floating] = None
 )
-      Add pointwise Dirichlet conditions by prescribing values at specific DOFs.
+      Impose pointwise Dirichlet conditions on selected DOFs.
       
-      This is a convenience method for adding equations of the form:
+      This is a convenience method that adds constraint equations of the form:
       
-          u[i] = v
+          u[inds] = vals
       
-      for given indices `i` and corresponding values `v`.
       
       Parameters
       ----------
-      inds : np.ndarray[np.integer]
-          Indices of the DOFs to constrain.
+      inds : np.ndarray[np.integer] of shape (n_eqs,)
+          Indices of DOFs to constrain.
       
-      vals : np.ndarray[np.floating], optional
-          Values to prescribe at the corresponding indices. If None, zeros are used.
-          Must have the same size as `inds`.
+      vals : np.ndarray[np.floating] of shape (n_eqs,), optional
+          Prescribed values associated with each constrained DOF.
+          If None, zero values are imposed.
       
       Raises
       ------
       AssertionError
-          If `vals` is provided and does not match the shape of `inds`.
+          If `vals` is provided and its size differs from `inds`.
+      
+      Notes
+      -----
+      This method is equivalent to adding rows of the identity matrix
+      to the constraint operator.
 
   >>> make_C_k(
     self
 ) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
-      Construct the transformation (C, k) that enforces the Dirichlet constraints.
+      Construct the affine transformation (C, k) enforcing all Dirichlet constraints.
       
-      Solves the linear constraint system D @ u = c by computing:
-      - a basis `C` for the nullspace of D (i.e., D @ C = 0),
+      This method solves the linear constraint system:
+      
+          D @ u = c
+      
+      by computing:
+      
+      - a matrix `C` forming a basis of the nullspace of `D`
+      (i.e., D @ C = 0),
       - a particular solution `k` such that D @ k = c.
       
-      Any admissible vector u satisfying the constraints can then be written as:
+      Any admissible vector `u` satisfying the constraints can then be written as:
       
           u = C @ dof + k
       
-      where `dof` is a reduced set of unconstrained degrees of freedom.
+      where `dof` is the reduced vector of unconstrained degrees of freedom.
+      
+      The nullspace basis and the particular solution are obtained through
+      a sparse QR factorization of Dᵀ.
       
       Returns
       -------
       C : sps.spmatrix
-          Basis of the nullspace of D, of shape (n_full_dofs, n_free_dofs), such that D @ C = 0.
+          Sparse matrix of shape (n_full_dofs, n_free_dofs) whose columns
+          form a basis of the nullspace of `D`.
       
       k : np.ndarray[np.floating]
-          Particular solution of shape (n_full_dofs,) such that D @ k = c.
-
-  >>> get_reduced_Ck(self) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray]
-      Compute and return the reduced transformation matrices `(C_u, k_u)` for the physical degrees of freedom.
-      
-      This method extracts only the first `nb_dofs_init` rows of the full constraint transformation matrices `(C, k)`
-      produced by `make_C_k()`, yielding a pair `(C_u, k_u)` such that the physical solution vector
-      `u_phys = C_u @ dof_ext + k_u` satisfies all imposed Dirichlet constraints for the original system.
-      
-      Returns
-      -------
-      tuple[sps.spmatrix, np.ndarray]
-          A tuple `(C_u, k_u)` where:
-          - `C_u` (`sps.spmatrix`): The reduced nullspace basis matrix of shape (`nb_dofs_init`, n_free_dofs).
-          - `k_u` (`np.ndarray`): The reduced particular solution vector of shape (`nb_dofs_init`,).
+          Vector of shape (n_full_dofs,) representing a particular solution
+          satisfying the constraints.
       
       Notes
       -----
-      - Only the rows corresponding to the initial (physical) degrees of freedom are returned.
-      - The full transformation matrices may include additional reference DOFs, which are omitted here.
+      - The transformation (C, k) defines an affine parametrization of the
+      admissible displacement space.
+      - The reduced DOF vector `dof` corresponds to the coordinates of `u`
+      in the nullspace basis.
+      - The QR factorization is performed on Dᵀ to efficiently extract both
+      the nullspace basis and the particular solution.
+
+  >>> get_reduced_Ck(self) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray]
+      Extract the affine constraint transformation restricted to physical DOFs.
+      
+      This method computes the full transformation (C, k) using `self.make_C_k()`
+      and returns only the rows associated with the initial (physical) degrees
+      of freedom. The resulting pair (C_u, k_u) defines:
+      
+          u_phys = C_u @ dof + k_u
+      
+      where `u_phys` satisfies all imposed Dirichlet constraints.
+      
+      Returns
+      -------
+      C_u : sps.spmatrix
+          Reduced nullspace basis matrix of shape (nb_dofs_init, n_free_dofs).
+      
+      k_u : np.ndarray
+          Reduced particular solution vector of shape (nb_dofs_init,).
+      
+      Notes
+      -----
+      - The full transformation (C, k) may include auxiliary reference DOFs
+      introduced by multi-point or hierarchical constraints.
+      - Only the rows corresponding to physical DOFs are returned.
+      - A warning is emitted if reference DOFs remain unconstrained,
+      which may indicate missing boundary specifications.
 
   >>> create_dirichlet(self)
+      Build a `Dirichlet` object representing the reduced constraint transformation.
+      
+      This is a convenience wrapper around `get_reduced_Ck()` that constructs
+      a `Dirichlet` object directly from the reduced affine mapping:
+      
+          u_phys = C_u @ dof + k_u
+      
+      Returns
+      -------
+      dirichlet : Dirichlet
+          A `Dirichlet` instance encapsulating the reduced transformation matrices.
 
   >>> get_ref_multipliers_from_internal_residual(self, K_u_minus_f)
-      Compute the Lagrange multipliers associated with reference point constraints
-      from the internal residual vector of the mechanical problem.
+      Recover Lagrange multipliers associated with reference DOF constraints.
       
-      This method reconstructs the multipliers λ enforcing the constraints linked to
-      reference degrees of freedom (DOFs) using the internal residual
-      `K_u_minus_f = K @ u - f`. The derivation relies on the relation:
+      This method reconstructs the Lagrange multipliers λ corresponding to
+      reference DOFs using the internal residual vector of the mechanical system:
       
-          C_ref.T @ λ = - C_u.T @ (K @ u - f),
+          r = K @ u - f
       
-      where the transformation matrix C = [C_u; C_ref] maps reduced DOFs to the full set
-      (physical + reference) while satisfying all constraint equations
-      (built via a QR decomposition in `make_C_k`).
+      The derivation relies on the partition of the transformation matrix:
       
-      Solving for λ in a least-squares sense yields:
+          C = [C_u;
+              C_ref]
       
-          λ = - (C_ref @ C_ref.T)^{-1} @ C_ref @ C_u.T @ (K @ u - f).
+      where `C_u` maps reduced DOFs to physical DOFs and `C_ref` maps them
+      to reference DOFs.
+      
+      The multipliers satisfy:
+      
+          C_ref.T @ λ = - C_u.T @ r
+      
+      and are obtained via the least-squares solution:
+      
+          λ = - (C_ref @ C_ref.T)⁻¹ @ C_ref @ C_u.T @ r
       
       Parameters
       ----------
       K_u_minus_f : np.ndarray
-          The internal residual vector (K @ u - f) of size `(nb_dofs_init,)`,
-          expressed only for the physical DOFs.
+          Internal residual vector of shape (nb_dofs_init,),
+          corresponding to K @ u - f restricted to physical DOFs.
       
       Returns
       -------
-      np.ndarray
-          The Lagrange multipliers λ associated with the reference point constraints.
+      lamb : np.ndarray
+          Vector of Lagrange multipliers associated with reference DOF constraints.
       
       Notes
       -----
-      - The result corresponds to the reaction forces (or generalized forces) transmitted
-      by the reference DOFs onto the system, ensuring equilibrium.
-      - The internal residual `K @ u - f` must be assembled consistently
-      with the stiffness matrix `K` and the load vector `f`.
-      - This method assumes that `C_ref @ C_ref.T` is invertible,
-      which is guaranteed if the reference constraints are linearly independent.
+      - The multipliers correspond to reaction forces or generalized constraint
+      forces transmitted through reference DOFs.
+      - The residual must be assembled consistently with the stiffness matrix
+      and load vector used to compute the displacement field.
+      - The matrix C_ref @ C_ref.T is assumed to be invertible, which holds
+      when reference constraints are linearly independent.
 
 
-FONCTIONS GLOBALES:
+GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
   >>> slave_reference_linear_relation_sort(
     slaves: numpy.ndarray[int],

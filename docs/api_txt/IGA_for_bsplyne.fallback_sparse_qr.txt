@@ -1,0 +1,53 @@
+MODULE: IGA_for_bsplyne.fallback_sparse_qr
+==========================================
+Documentation for module IGA_for_bsplyne.fallback_sparse_qr
+
+GLOBAL FUNCTIONS:
+~~~~~~~~~~~~~~~~~~
+  >>> get_givens_params(a, b)
+      Computes the Givens rotation parameters (c, s) such that the
+      rotation matrix applied to [a, b]^T results in [r, 0]^T.
+
+  >>> apply_rotation_sparse(
+    idx_j,
+    dat_j,
+    idx_i,
+    dat_i,
+    c,
+    s,
+    start_col,
+    end_col,
+    w_j,
+    w_i,
+    active
+)
+      Applies a Givens rotation to two sparse rows.
+      
+      Parameters:
+      - idx_j, dat_j: Indices and data of the j-th row.
+      - idx_i, dat_i: Indices and data of the i-th row.
+      - c, s: Rotation parameters.
+      - start_col, end_col: Column range to apply the rotation.
+      - w_j, w_i: Pre-allocated dense work vectors for processing.
+      - active: Pre-allocated boolean mask to track non-zero entries.
+
+  >>> to_csr(rows_idx, rows_dat, n_rows)
+      Efficiently converts typed lists of sparse rows into a flat CSR structure.
+      Uses pre-allocation to ensure O(nnz) performance.
+
+  >>> sparse_qr_numba(data, indices, indptr, shape)
+      Core Sparse QR decomposition using Givens rotations.
+      
+      Iterates through columns to eliminate sub-diagonal elements
+      while maintaining a sparse representation using Numba typed lists.
+      Constructs Q^T (stored in Q_idx/Q_dat) and R.
+
+  >>> my_qr_sparse(A)
+      Computes the Sparse QR decomposition of matrix A.
+      Uses column reordering to minimize fill-in.
+      
+      Returns:
+      - Q: Orthogonal matrix (m x m)
+      - R_perm: Upper triangular matrix (m x n)
+      - permutation: Column permutation array
+      - rank: Numerical rank of the matrix

@@ -1,33 +1,45 @@
 ================================================================
-DOCUMENTATION COMPLÈTE DE L'API : IGA_FOR_BSPLYNE
+FULL API DOCUMENTATION: IGA_FOR_BSPLYNE
 ================================================================
 
 
 
 MODULE: IGA_for_bsplyne
 =======================
-.. include:: ../README.md
+.. include:: ../../README.md
 
 ################################################################
 MODULE: IGA_for_bsplyne.Dirichlet
 =================================
-Documentation du module IGA_for_bsplyne.Dirichlet
+Documentation for module IGA_for_bsplyne.Dirichlet
 
-CLASSE: Dirichlet
+CLASS: Dirichlet
 -----------------
-A class to handle Dirichlet boundary conditions (BC) for a problem using an affine mapping.
+Affine representation of linear Dirichlet constraints.
 
-The Dirichlet class provides methods to apply Dirichlet BCs by mapping degrees of freedom (dof)
-to displacements (u) using the relation `u = C @ dof + k`. It supports creating instances with
-identity mappings, locking specific displacement indices, and computing dof from displacements
-via least squares approximation.
+This class represents Dirichlet boundary conditions through an affine
+transformation between a reduced vector of free parameters (`dof`)
+and the full physical displacement vector (`u`):
+
+    u = C @ dof + k
+
+where:
+
+- `u` is the full displacement vector satisfying all imposed constraints.
+- `dof` is the reduced vector of unconstrained degrees of freedom.
+- `C` is a sparse matrix whose columns form a basis of admissible variations.
+- `k` is a particular displacement vector satisfying the constraints.
+
+This representation allows:
+- elimination of constrained DOFs,
+- support for general linear multi-point constraints.
 
 Attributes
 ----------
-C : sps.csc_matrix
-    The matrix used in the affine mapping from `dof` to `u`.
-k : np.ndarray[np.floating]
-    The vector used in the affine mapping from `dof` to `u`.
+C : sps.csc_matrix of shape (n_full_dofs, n_free_dofs)
+    Sparse matrix defining the linear mapping from reduced DOFs to full DOFs.
+k : np.ndarray of shape (n_full_dofs,)
+    Particular solution ensuring that `u` satisfies the Dirichlet constraints.
 
   >>> __init__(
     self,
@@ -69,29 +81,64 @@ k : np.ndarray[np.floating]
   >>> dof_lsq(self, u: numpy.ndarray[numpy.floating]) -> numpy.ndarray[numpy.floating]
 
 
-CLASSE: DirichletConstraintHandler
+CLASS: DirichletConstraintHandler
 ----------------------------------
-Manage linear Dirichlet constraints for variational or optimization problems.
+Accumulate affine linear constraints and construct the associated Dirichlet mapping.
 
-This class accumulates linear equations of the form `D @ u = c` representing Dirichlet
-boundary conditions or linear relationships between degrees of freedom (DOFs), and
-computes a reduced basis representation that parametrizes the set of admissible solutions.
+This class is designed to impose linear affine constraints of the form:
 
-Specifically, it computes matrices `C` and `k` such that any vector `u` satisfying
-`D @ u = c` can be written as:
+    D @ u = c
+
+where `u` is the full displacement (or state) vector. Constraints are progressively
+accumulated and, once fully specified, converted into an affine parametrization of
+the admissible solution space:
 
     u = C @ dof + k
 
-where `dof` is a reduced vector of free parameters.
+where:
+
+- `C` is a basis of the nullspace of `D` (i.e. `D @ C = 0`) obtained by
+QR decomposition,
+- `k` is a particular solution satisfying the constraints,
+obtained through the QR decomposition which helps solve:
+
+    D k = c
+
+- `dof` is a reduced vector of unconstrained degrees of freedom.
+
+The main purpose of this class is to provide a flexible and robust interface
+to define constraints before constructing a `Dirichlet` object representing
+the reduced parametrization.
+
+Typical workflow
+----------------
+1. Create a handler with the number of physical DOFs (`u`).
+2. Add constraint equations using helper methods.
+3. **Ensure that all reference DOFs (e.g., translations or rotations introduced for
+rigid-body relations) are fully constrained before computing `C` and `k`.**
+4. Build the reduced representation `(C, k)` or directly create a `Dirichlet` object.
+
+This separation allows constraints to be assembled incrementally and validated
+before generating the final affine mapping.
 
 Attributes
 ----------
 nb_dofs_init : int
-    Number of DOFs in the original unconstrained system, before adding any reference DOFs.
+    Number of DOFs in the original unconstrained system (physical DOFs `u`).
 lhs : sps.spmatrix
-    Accumulated constraint matrix D (left-hand side of the Dirichlet conditions).
+    Accumulated constraint matrix `D`.
 rhs : np.ndarray[np.floating]
-    Accumulated right-hand side vector c of the Dirichlet conditions.
+    Accumulated right-hand side vector `c`.
+
+Notes
+-----
+- The constraint system may include additional reference DOFs introduced
+to express kinematic relations or rigid-body behaviors.
+- **All reference DOFs must be fully constrained before computing `C` and `k`;**
+otherwise, DOFs that lie in the kernel of `D` cannot be controlled and imposed values
+(e.g., prescribed translations) may not appear in the resulting solution `k`.
+- The resulting affine mapping guarantees that any generated vector `u`
+satisfies all imposed constraints.
 
   >>> __init__(self, nb_dofs_init: int)
 
@@ -135,7 +182,7 @@ rhs : np.ndarray[np.floating]
   >>> get_ref_multipliers_from_internal_residual(self, K_u_minus_f)
 
 
-FONCTIONS GLOBALES:
+GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
   >>> slave_reference_linear_relation_sort(
     slaves: numpy.ndarray[int],
@@ -156,38 +203,62 @@ FONCTIONS GLOBALES:
 ################################################################
 MODULE: IGA_for_bsplyne.IGAPatch
 ================================
-Documentation du module IGA_for_bsplyne.IGAPatch
+Documentation for module IGA_for_bsplyne.IGAPatch
 
-CLASSE: IGAPatch
+CLASS: IGAPatch
 ----------------
-IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
-This class computes the stiffness matrix and the right hand side on one B-spline patch.
+Local representation of a 3D B-spline patch for linear elasticity.
+
+This class provides the building blocks to compute linear elasticity operators
+(stiffness matrix, right-hand side, strain, stress, von Mises stress) for a
+single B-spline volume. It is intended **solely as a component of a multipatch
+problem** and is not designed to be used as a standalone solver.
+
+Typically, IGAPatch objects are managed by a `ProblemIGA` instance, which
+assembles multiple patches, enforces Dirichlet constraints, and solves the
+global linear elasticity problem.
+
+Features provided by IGAPatch include:
+    - computation of the Jacobian and its determinant,
+    - gradients of shape functions in physical space,
+    - linear elastic stiffness matrix assembly for one patch,
+    - evaluation of prescribed surface forces,
+    - post-processing quantities such as displacement, strain, stress, and von Mises stress,
+    - export of results to visualization tools (e.g., ParaView).
 
 Attributes
 ----------
 spline : BSpline
-    B-spline volume object used as the patch.
-    Contains the methods to compte the shape functions.
+    The 3D B-spline volume representing the patch geometry and shape functions.
 ctrl_pts : np.ndarray[np.floating]
-    Control points defining the patch geometry.
-E : float
-    Young's modulus of the material.
-nu : float
-    Poisson's ratio of the material.
+    Array of control points of shape (3, n_xi, n_eta, n_zeta) defining the patch geometry.
 xi : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate xi.
+    Isoparametric integration points along the xi direction.
 dxi : np.ndarray[np.floating]
-    Corresponding weights of xi.
+    Corresponding quadrature weights for xi.
 eta : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate eta.
+    Isoparametric integration points along the eta direction.
 deta : np.ndarray[np.floating]
-    Corresponding weights of eta.
+    Corresponding quadrature weights for eta.
 zeta : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate zeta.
+    Isoparametric integration points along the zeta direction.
 dzeta : np.ndarray[np.floating]
-    Corresponding weights of zeta.
+    Corresponding quadrature weights for zeta.
 F_N : np.ndarray[np.floating]
-    Surfacic forces applied on the corresponding side of the patch.
+    Prescribed surface forces, with shape (3 (direction), 2 (side: front/back), 3 (physical components)).
+    Used for computing the right-hand side vector.
+H : np.ndarray[np.floating]
+    Constitutive matrix in Voigt notation (6x6) for linear isotropic elasticity.
+    Defined from `E` and `nu`.
+
+Notes
+-----
+- All integration points are generated using Gaussian quadrature with a number
+  of points determined from the spline degree.
+- This class **does not handle multipatch connectivity or global constraints**.
+  Use `ProblemIGA` to assemble and solve multipatch problems.
+- Post-processing quantities can be evaluated at the integration points or exported
+  to visualization tools like ParaView.
 
   >>> __init__(
     self,
@@ -235,20 +306,17 @@ F_N : np.ndarray[np.floating]
 
   >>> sigma(
     self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
+    eps: numpy.ndarray[numpy.floating]
 ) -> numpy.ndarray[numpy.floating]
 
   >>> sigma_eig(
     self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
+    sig: numpy.ndarray[numpy.floating]
 ) -> numpy.ndarray[numpy.floating]
 
   >>> von_mises(
     self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
+    sig_eig: numpy.ndarray[numpy.floating]
 ) -> numpy.ndarray[numpy.floating]
 
   >>> save_paraview(
@@ -259,39 +327,73 @@ F_N : np.ndarray[np.floating]
     n_eval_per_elem: int = 10
 )
 
-  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+  >>> make_paraview_fields(
+    self,
+    U: numpy.ndarray[numpy.floating],
+    XI: list[numpy.ndarray[numpy.floating]]
+) -> dict[str, numpy.ndarray[numpy.floating]]
 
 
-CLASSE: IGAPatchDensity
+CLASS: IGAPatchDensity
 -----------------------
-IGAPatch class to compute linear elasticity operators on 3D B-spline volumes.
-This class computes the stiffness matrix and the right hand side on one B-spline patch.
+Density-weighted representation of a 3D B-spline patch for linear elasticity.
+
+This class extends :py:class:`IGAPatch` by allowing a spatially varying
+material density. The density field is defined at the control points and
+interpolated over the parametric domain, scaling the constitutive matrix locally
+for both stiffness assembly and stress evaluation.
+
+IGAPatchDensity is intended as a component of a multipatch problem and is
+not a standalone solver. Typically, objects of this class are managed by a
+`ProblemIGA` instance that assembles multiple patches, enforces Dirichlet
+constraints, and solves the global elasticity problem.
+
+Features provided by IGAPatchDensity include:
+    - computation of the Jacobian and its determinant,
+    - gradients of shape functions in physical space,
+    - density-weighted linear elastic stiffness matrix assembly,
+    - evaluation of prescribed surface forces,
+    - post-processing quantities such as displacement, strain, stress,
+    principal stresses, von Mises stress, and local density,
+    - export of results to visualization tools (e.g., ParaView).
 
 Attributes
 ----------
 spline : BSpline
-    B-spline volume object used as the patch.
-    Contains the methods to compte the shape functions.
+    The 3D B-spline volume representing the patch geometry and shape functions.
 ctrl_pts : np.ndarray[np.floating]
-    Control points defining the patch geometry.
-E : float
-    Young's modulus of the material.
-nu : float
-    Poisson's ratio of the material.
+    Array of control points of shape (3, n_xi, n_eta, n_zeta) defining the patch geometry.
 xi : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate xi.
+    Isoparametric integration points along the xi direction.
 dxi : np.ndarray[np.floating]
-    Corresponding weights of xi.
+    Corresponding quadrature weights for xi.
 eta : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate eta.
+    Isoparametric integration points along the eta direction.
 deta : np.ndarray[np.floating]
-    Corresponding weights of eta.
+    Corresponding quadrature weights for eta.
 zeta : np.ndarray[np.floating]
-    Discretization of the isoparametric coordinate zeta.
+    Isoparametric integration points along the zeta direction.
 dzeta : np.ndarray[np.floating]
-    Corresponding weights of zeta.
+    Corresponding quadrature weights for zeta.
 F_N : np.ndarray[np.floating]
-    Surfacic forces applied on the corresponding side of the patch.
+    Prescribed surface forces, shape (3 (direction), 2 (side: front/back), 3 (physical components)),
+    used for computing the right-hand side vector.
+H : np.ndarray[np.floating]
+    Constitutive matrix in Voigt notation (6x6) for linear isotropic elasticity.
+    Defined from `E` and `nu`.
+d : np.ndarray[np.floating]
+    Density field expressed in the B-spline basis, used to scale the
+    constitutive matrix locally. At evaluation, values are clipped to [0, 1].
+
+Notes
+-----
+- All integration points are generated using Gaussian quadrature with a number
+of points determined from the spline degree.
+- The density field modifies the stiffness and stress at each integration point.
+- This class does not handle multipatch connectivity or global constraints.
+Use `ProblemIGA` to assemble and solve multipatch problems.
+- Post-processing quantities can be evaluated at the integration points or exported
+to visualization tools like ParaView.
 
   >>> __init__(
     self,
@@ -312,50 +414,50 @@ F_N : np.ndarray[np.floating]
 
   >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
 
-  >>> sigma(
-    self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
-) -> numpy.ndarray[numpy.floating]
-
   >>> density(
     self,
     XI: list[numpy.ndarray[numpy.floating]]
 ) -> numpy.ndarray[numpy.floating]
 
-  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating])
+  >>> sigma(
+    self,
+    eps: numpy.ndarray[numpy.floating],
+    density: numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[numpy.floating]
 
+  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating], XI)
 
-FONCTIONS GLOBALES:
-~~~~~~~~~~~~~~~~~~
-  >>> compute_epsilon(patch_obj, u_patch, spline, XI)
-
-  >>> compute_sigma(patch_obj, u_patch, spline, XI)
-
-  >>> compute_sigma_eig(patch_obj, u_patch, spline, XI)
-
-  >>> compute_von_mises(patch_obj, u_patch, spline, XI)
-
-  >>> compute_density(patch_obj, spline, XI)
 
 ################################################################
 MODULE: IGA_for_bsplyne.ProblemIGA
 ==================================
-Documentation du module IGA_for_bsplyne.ProblemIGA
+Documentation for module IGA_for_bsplyne.ProblemIGA
 
-CLASSE: ProblemIGA
+CLASS: ProblemIGA
 ------------------
-ProblemIGA class to compute linear elasticity on 3D multipatch B-spline volumes.
-This class computes the stiffness matrix and the right hand side and solves the linear problem.
+`ProblemIGA` class for linear elasticity on 3D multipatch B-spline volumes.
+
+This class assembles the global stiffness matrix and right-hand side vector
+from multiple :py:class:`IGAPatch` or :py:class:`IGAPatchDensity` objects,
+applies Dirichlet boundary conditions, and solves the linear system to
+compute the displacement field.
 
 Attributes
 ----------
 patches : list[IGAPatch]
-    List of IGAPatch objects representing the patches for the ProblemIGA.
+    List of patch objects representing the B-spline patches of the problem.
 connectivity : MultiPatchBSplineConnectivity
-    MultiPatchBSplineConnectivity object defining the connectivity information.
+    Connectivity information linking the patches to global degrees of freedom.
 dirichlet : Dirichlet
-    Dirichlet object specifying the Dirichlet boundary conditions.
+    Object defining the Dirichlet boundary conditions applied to the system.
+
+Notes
+-----
+- The class handles multipatch assembly and global degrees of freedom mapping.
+- Individual patch computations (stiffness, rhs, fields) are delegated to each patch.
+- Post-processing quantities (strain, stress, von Mises) can be exported to ParaView
+using :py:meth:`save_paraview`.
+- Parallelization is used internally during assembly via `parallel_blocks`.
 
   >>> __init__(
     self,
@@ -392,6 +494,47 @@ dirichlet : Dirichlet
     u: numpy.ndarray[numpy.floating],
     path: str,
     name: str,
-    n_eval_per_elem: int = 10
+    n_eval_per_elem: int = 10,
+    disable_parallel: bool = False
 )
 
+
+################################################################
+MODULE: IGA_for_bsplyne.fallback_sparse_qr
+==========================================
+Documentation for module IGA_for_bsplyne.fallback_sparse_qr
+
+GLOBAL FUNCTIONS:
+~~~~~~~~~~~~~~~~~~
+  >>> get_givens_params(a, b)
+
+  >>> apply_rotation_sparse(
+    idx_j,
+    dat_j,
+    idx_i,
+    dat_i,
+    c,
+    s,
+    start_col,
+    end_col,
+    w_j,
+    w_i,
+    active
+)
+
+  >>> to_csr(rows_idx, rows_dat, n_rows)
+
+  >>> sparse_qr_numba(data, indices, indptr, shape)
+
+  >>> my_qr_sparse(A)
+
+################################################################
+MODULE: IGA_for_bsplyne.solvers
+===============================
+Documentation for module IGA_for_bsplyne.solvers
+
+GLOBAL FUNCTIONS:
+~~~~~~~~~~~~~~~~~~
+  >>> solve_sparse(A, b)
+
+  >>> qr_sparse(A)

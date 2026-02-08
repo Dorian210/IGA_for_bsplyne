@@ -1,5 +1,5 @@
 # Path to the package to document
-PACKAGE = ../IGA_for_bsplyne
+PACKAGE = ../src/IGA_for_bsplyne
 
 # Output directory for the documentation
 DOC_DIR = .
@@ -35,6 +35,9 @@ html:
 	        sed -i "s|$(LOGO)|$$rel_path|g" "$$file"; \
 	    fi; \
 	done
+	sed -i \
+	  's|<img src="[^"]*$(LOGO)"|<img src="$(LOGO)"|g' \
+	  $(DOC_DIR)/$(notdir $(abspath $(PACKAGE))).html
 
 # Generate a PDF documentation from HTML
 pdf:
