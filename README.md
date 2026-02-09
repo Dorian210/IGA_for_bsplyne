@@ -13,15 +13,18 @@ This library extends the geometric foundations of [bsplyne](https://github.com/D
 ### 1. High-Performance Solvers (Optional but Recommended)
 For large-scale 3D problems, **IGA_for_bsplyne** leverages `SuiteSparse` (via `scikit-sparse` and `sparseqr`) to achieve significant speedups. 
 
-* **Phase A: System Libraries** Install the `SuiteSparse` headers on your operating system:
-    * **macOS**: `brew install suitesparse`
-    * **Ubuntu/Debian**: `sudo apt-get install libsuitesparse-dev`
-    * **Windows/Conda**: `conda install -c conda-forge suitesparse`
-
-* **Phase B: Python Wrappers** Once the system libraries are installed, you must install the Python wrappers manually:
+* **Recommended Installation (Conda)**: 
+  Conda is highly recommended as it automatically manages the complex non-Python dependencies (SuiteSparse). Run these commands in order:
   ```bash
-  pip install scikit-sparse sparseqr
+  conda install -c conda-forge scikit-sparse
+  pip install sparseqr
   ```
+  *Note: `sparseqr` is not on Conda, but it will successfully link to the SuiteSparse libraries installed by scikit-sparse.*
+
+* **Alternative (System Package Manager)**: 
+  If you are not using Conda, you must install SuiteSparse manually. **Note:** This method is not recommended for most users as it often leads to complex compilation issues during the `pip` phase:
+    * **macOS**: `brew install suitesparse && pip install scikit-sparse sparseqr`
+    * **Ubuntu/Debian**: `sudo apt-get install libsuitesparse-dev && pip install scikit-sparse sparseqr`
 
 * **Fallback**: If these packages are not detected, the library automatically falls back to standard `scipy.sparse` solvers and an internal Sparse QR implementation, ensuring full compatibility at the cost of performance.
 
@@ -30,7 +33,7 @@ For large-scale 3D problems, **IGA_for_bsplyne** leverages `SuiteSparse` (via `s
 #### Standard Installation
 Install the latest stable version directly from PyPI:
 ```bash
-pip install IGA_for_bsplyne
+pip install IGA-for-bsplyne
 ```
 
 #### Development Installation
