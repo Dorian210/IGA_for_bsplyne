@@ -2,12 +2,7 @@
 .. include:: ../../README.md
 """
 
-from .IGAPatch import IGAPatch
-
-# IGAPatch.__module__ = "IGA_for_bsplyne.IGAPatch"
-from .Dirichlet import Dirichlet
-
-# Dirichlet.__module__ = "IGA_for_bsplyne.Dirichlet"
+from .IGAPatch import IGAPatch, IGAPatchDensity
+from .Dirichlet import Dirichlet, DirichletConstraintHandler
 from .ProblemIGA import ProblemIGA
-
-# ProblemIGA.__module__ = "IGA_for_bsplyne.ProblemIGA"
+from .solvers import solve_sparse, qr_sparse

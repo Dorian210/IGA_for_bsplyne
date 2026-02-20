@@ -197,19 +197,14 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 
                         <label class="view-source-button" for="mod-IGA_for_bsplyne-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">.. include:: ../../README.md</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.IGAPatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">IGAPatch</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="c1"># IGAPatch.__module__ = &quot;IGA_for_bsplyne.IGAPatch&quot;</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.Dirichlet</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dirichlet</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="c1"># Dirichlet.__module__ = &quot;IGA_for_bsplyne.Dirichlet&quot;</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.ProblemIGA</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProblemIGA</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="c1"># ProblemIGA.__module__ = &quot;IGA_for_bsplyne.ProblemIGA&quot;</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="sd">.. include:: ../../README.md</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.IGAPatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">IGAPatch</span><span class="p">,</span> <span class="n">IGAPatchDensity</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.Dirichlet</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dirichlet</span><span class="p">,</span> <span class="n">DirichletConstraintHandler</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.ProblemIGA</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProblemIGA</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_sparse</span><span class="p">,</span> <span class="n">qr_sparse</span>
 </span></pre></div>
 
 

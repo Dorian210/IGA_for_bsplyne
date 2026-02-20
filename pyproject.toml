@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "IGA_for_bsplyne"
-version = "1.0.1"
+version = "1.0.2"
 description = "A package for IGA elasticity."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,7 +20,7 @@ dependencies = [
     "scipy>=1.8",
     "tqdm>=4.60",
     "numba>=0.55",
-    "bsplyne>=1.0.4"
+    "bsplyne>=1.0.5"
 ]
 
 classifiers = [
