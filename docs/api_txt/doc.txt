@@ -38,47 +38,50 @@ Attributes
 ----------
 C : sps.csc_matrix of shape (n_full_dofs, n_free_dofs)
     Sparse matrix defining the linear mapping from reduced DOFs to full DOFs.
-k : np.ndarray of shape (n_full_dofs,)
+k : NDArray of float of shape (n_full_dofs,)
     Particular solution ensuring that `u` satisfies the Dirichlet constraints.
 
   >>> __init__(
     self,
     C: scipy.sparse._matrix.spmatrix,
-    k: numpy.ndarray[numpy.floating]
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
 
   >>> eye(cls, size: int)
 
   >>> lock_disp_inds(
     cls,
-    inds: numpy.ndarray[numpy.integer],
-    k: numpy.ndarray[numpy.floating]
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
 
   >>> set_u_inds_vals(
     self,
-    inds: numpy.ndarray[numpy.integer],
-    vals: numpy.ndarray[numpy.floating]
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    vals: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
 
   >>> slave_reference_linear_relation(
     self,
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int],
-    coefs: Optional[numpy.ndarray[float]] = None
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    coefs: Optional[numpy.ndarray[Any, numpy.dtype[numpy.floating]]] = None
 )
 
   >>> u_du_ddof(
     self,
-    dof: numpy.ndarray[numpy.floating]
-) -> tuple[numpy.ndarray[numpy.floating], scipy.sparse._csc.csc_matrix]
+    dof: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> tuple[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], scipy.sparse._csc.csc_matrix]
 
   >>> u(
     self,
-    dof: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    dof: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
-  >>> dof_lsq(self, u: numpy.ndarray[numpy.floating]) -> numpy.ndarray[numpy.floating]
+  >>> dof_lsq(
+    self,
+    u: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
 
 CLASS: DirichletConstraintHandler
@@ -127,7 +130,7 @@ nb_dofs_init : int
     Number of DOFs in the original unconstrained system (physical DOFs `u`).
 lhs : sps.spmatrix
     Accumulated constraint matrix `D`.
-rhs : np.ndarray[np.floating]
+rhs : NDArray[np.floating]
     Accumulated right-hand side vector `c`.
 
 Notes
@@ -147,7 +150,7 @@ satisfies all imposed constraints.
   >>> add_eqs(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating]
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
 
   >>> add_ref_dofs(self, nb_dofs: int)
@@ -155,50 +158,55 @@ satisfies all imposed constraints.
   >>> add_ref_dofs_with_behavior(
     self,
     behavior_mat: scipy.sparse._matrix.spmatrix,
-    slave_inds: numpy.ndarray[numpy.integer]
+    slave_inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
 )
 
   >>> add_rigid_body_constraint(
     self,
-    ref_point: numpy.ndarray[numpy.floating],
-    slaves_inds: numpy.ndarray[numpy.integer],
-    slaves_positions: numpy.ndarray[numpy.floating]
+    ref_point: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    slaves_inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    slaves_positions: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
 
   >>> add_eqs_from_inds_vals(
     self,
-    inds: numpy.ndarray[numpy.integer],
-    vals: numpy.ndarray[numpy.floating] = None
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    vals: Optional[numpy.ndarray[Any, numpy.dtype[numpy.floating]]] = None
 )
 
   >>> make_C_k(
     self
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._csc.csc_matrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
-  >>> get_reduced_Ck(self) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray]
+  >>> get_reduced_Ck(
+    self
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
   >>> create_dirichlet(self)
 
-  >>> get_ref_multipliers_from_internal_residual(self, K_u_minus_f)
+  >>> get_ref_multipliers_from_internal_residual(
+    self,
+    K_u_minus_f: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
 
 GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
   >>> slave_reference_linear_relation_sort(
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int]
-) -> numpy.ndarray[int]
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
 
   >>> slave_reference_linear_relation_inner(
-    indices: numpy.ndarray[int],
-    indptr: numpy.ndarray[int],
-    data: numpy.ndarray[float],
-    k: numpy.ndarray[float],
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int],
-    coefs: numpy.ndarray[float],
-    sorted_slaves: numpy.ndarray[int]
-) -> tuple[numpy.ndarray[int], numpy.ndarray[int], numpy.ndarray[float], numpy.ndarray[float]]
+    indices: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    indptr: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    data: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    coefs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    sorted_slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
+) -> tuple[numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
 ################################################################
 MODULE: IGA_for_bsplyne.IGAPatch
@@ -230,24 +238,24 @@ Attributes
 ----------
 spline : BSpline
     The 3D B-spline volume representing the patch geometry and shape functions.
-ctrl_pts : np.ndarray[np.floating]
+ctrl_pts : NDArray[np.floating]
     Array of control points of shape (3, n_xi, n_eta, n_zeta) defining the patch geometry.
-xi : np.ndarray[np.floating]
+xi : NDArray[np.floating]
     Isoparametric integration points along the xi direction.
-dxi : np.ndarray[np.floating]
+dxi : NDArray[np.floating]
     Corresponding quadrature weights for xi.
-eta : np.ndarray[np.floating]
+eta : NDArray[np.floating]
     Isoparametric integration points along the eta direction.
-deta : np.ndarray[np.floating]
+deta : NDArray[np.floating]
     Corresponding quadrature weights for eta.
-zeta : np.ndarray[np.floating]
+zeta : NDArray[np.floating]
     Isoparametric integration points along the zeta direction.
-dzeta : np.ndarray[np.floating]
+dzeta : NDArray[np.floating]
     Corresponding quadrature weights for zeta.
-F_N : np.ndarray[np.floating]
+F_N : NDArray[np.floating]
     Prescribed surface forces, with shape (3 (direction), 2 (side: front/back), 3 (physical components)).
     Used for computing the right-hand side vector.
-H : np.ndarray[np.floating]
+H : NDArray[np.floating]
     Constitutive matrix in Voigt notation (6x6) for linear isotropic elasticity.
     Defined from `E` and `nu`.
 
@@ -263,10 +271,10 @@ Notes
   >>> __init__(
     self,
     spline: bsplyne.b_spline.BSpline,
-    ctrl_pts: numpy.ndarray[numpy.floating],
+    ctrl_pts: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     E: float,
     nu: float,
-    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+    F_N: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]] = array([[[0., 0., 0.],
         [0., 0., 0.]],
 
        [[0., 0., 0.],
@@ -279,49 +287,49 @@ Notes
   >>> jacobian(
     self,
     dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
-) -> tuple[numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating], numpy.ndarray[numpy.floating]]
+) -> tuple[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
   >>> grad_N(
     self,
-    Jinv: numpy.ndarray[numpy.floating],
+    Jinv: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     dN_dXI: tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix]
-) -> numpy.ndarray[numpy.object_]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.object_]]
 
   >>> make_W(
     self,
-    detJ: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    detJ: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> stiffness(self) -> scipy.sparse._matrix.spmatrix
 
-  >>> rhs(self) -> numpy.ndarray[numpy.floating]
+  >>> rhs(self) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> area_border(self, axis: int, front_side: bool) -> float
 
   >>> epsilon(
     self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
-) -> numpy.ndarray[numpy.floating]
+    U: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    XI: Sequence[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> sigma(
     self,
-    eps: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    eps: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> sigma_eig(
     self,
-    sig: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    sig: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> von_mises(
     self,
-    sig_eig: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    sig_eig: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> save_paraview(
     self,
-    U: numpy.ndarray[numpy.floating],
+    U: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     path: str,
     name: str,
     n_eval_per_elem: int = 10
@@ -329,9 +337,9 @@ Notes
 
   >>> make_paraview_fields(
     self,
-    U: numpy.ndarray[numpy.floating],
-    XI: list[numpy.ndarray[numpy.floating]]
-) -> dict[str, numpy.ndarray[numpy.floating]]
+    U: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    XI: Sequence[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
+) -> dict[str, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
 
 CLASS: IGAPatchDensity
@@ -361,27 +369,27 @@ Attributes
 ----------
 spline : BSpline
     The 3D B-spline volume representing the patch geometry and shape functions.
-ctrl_pts : np.ndarray[np.floating]
+ctrl_pts : NDArray[np.floating]
     Array of control points of shape (3, n_xi, n_eta, n_zeta) defining the patch geometry.
-xi : np.ndarray[np.floating]
+xi : NDArray[np.floating]
     Isoparametric integration points along the xi direction.
-dxi : np.ndarray[np.floating]
+dxi : NDArray[np.floating]
     Corresponding quadrature weights for xi.
-eta : np.ndarray[np.floating]
+eta : NDArray[np.floating]
     Isoparametric integration points along the eta direction.
-deta : np.ndarray[np.floating]
+deta : NDArray[np.floating]
     Corresponding quadrature weights for eta.
-zeta : np.ndarray[np.floating]
+zeta : NDArray[np.floating]
     Isoparametric integration points along the zeta direction.
-dzeta : np.ndarray[np.floating]
+dzeta : NDArray[np.floating]
     Corresponding quadrature weights for zeta.
-F_N : np.ndarray[np.floating]
+F_N : NDArray[np.floating]
     Prescribed surface forces, shape (3 (direction), 2 (side: front/back), 3 (physical components)),
     used for computing the right-hand side vector.
-H : np.ndarray[np.floating]
+H : NDArray[np.floating]
     Constitutive matrix in Voigt notation (6x6) for linear isotropic elasticity.
     Defined from `E` and `nu`.
-d : np.ndarray[np.floating]
+d : NDArray[np.floating]
     Density field expressed in the B-spline basis, used to scale the
     constitutive matrix locally. At evaluation, values are clipped to [0, 1].
 
@@ -398,11 +406,11 @@ to visualization tools like ParaView.
   >>> __init__(
     self,
     spline: bsplyne.b_spline.BSpline,
-    ctrl_pts: numpy.ndarray[numpy.floating],
+    ctrl_pts: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     E: float,
     nu: float,
-    d: numpy.ndarray[numpy.floating],
-    F_N: numpy.ndarray[numpy.floating] = array([[[0., 0., 0.],
+    d: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    F_N: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]] = array([[[0., 0., 0.],
         [0., 0., 0.]],
 
        [[0., 0., 0.],
@@ -416,16 +424,20 @@ to visualization tools like ParaView.
 
   >>> density(
     self,
-    XI: list[numpy.ndarray[numpy.floating]]
-) -> numpy.ndarray[numpy.floating]
+    XI: Sequence[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> sigma(
     self,
-    eps: numpy.ndarray[numpy.floating],
-    density: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    eps: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    density: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
-  >>> make_paraview_fields(self, U: numpy.ndarray[numpy.floating], XI)
+  >>> make_paraview_fields(
+    self,
+    U: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    XI: Sequence[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
+)
 
 
 ################################################################
@@ -470,28 +482,31 @@ using :py:meth:`save_paraview`.
     self,
     verbose: bool = False,
     disable_parallel: bool = False
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
   >>> apply_dirichlet(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating],
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     verbose: bool = False
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
 
   >>> solve_from_lhs_rhs(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating],
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     iterative_solve: bool = False,
     verbose: bool = True
-) -> numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
-  >>> solve(self, iterative_solve=False) -> numpy.ndarray[numpy.floating]
+  >>> solve(
+    self,
+    iterative_solve=False
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
   >>> save_paraview(
     self,
-    u: numpy.ndarray[numpy.floating],
+    u: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     path: str,
     name: str,
     n_eval_per_elem: int = 10,
@@ -526,7 +541,9 @@ GLOBAL FUNCTIONS:
 
   >>> sparse_qr_numba(data, indices, indptr, shape)
 
-  >>> my_qr_sparse(A)
+  >>> my_qr_sparse(
+    A: scipy.sparse._matrix.spmatrix
+) -> tuple[scipy.sparse._csr.csr_matrix, scipy.sparse._csr.csr_matrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], int]
 
 ################################################################
 MODULE: IGA_for_bsplyne.solvers
@@ -535,6 +552,11 @@ Documentation for module IGA_for_bsplyne.solvers
 
 GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
-  >>> solve_sparse(A, b)
+  >>> solve_sparse(
+    A: scipy.sparse._matrix.spmatrix,
+    b: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 
-  >>> qr_sparse(A)
+  >>> qr_sparse(
+    A: scipy.sparse._matrix.spmatrix
+) -> tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], int]

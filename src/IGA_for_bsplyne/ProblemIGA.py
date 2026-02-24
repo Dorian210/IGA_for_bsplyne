@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 import scipy.sparse as sps
 from scipy.sparse.linalg import cg
 import inspect
@@ -73,7 +74,7 @@ class ProblemIGA:
 
     def lhs_rhs(
         self, verbose: bool = False, disable_parallel: bool = False
-    ) -> tuple[sps.spmatrix, np.ndarray[np.floating]]:
+    ) -> tuple[sps.spmatrix, NDArray[np.floating]]:
         """
         Assemble the global linear system for the multipatch problem.
 
@@ -98,7 +99,7 @@ class ProblemIGA:
         lhs : sps.spmatrix
             The assembled global sparse stiffness matrix of shape
             (3 * nb_unique_nodes, 3 * nb_unique_nodes).
-        rhs : np.ndarray[np.floating]
+        rhs : NDArray[np.floating]
             The assembled global right-hand side vector of shape
             (3 * nb_unique_nodes,).
 
@@ -125,7 +126,7 @@ class ProblemIGA:
             rhs,
             self.connectivity.unique_field_indices(
                 (3,), representation="unpacked"
-            ).ravel(),
+            ).ravel(),  # type: ignore
             unpacked_rhs,
         )
 
@@ -168,8 +169,8 @@ class ProblemIGA:
         return lhs, rhs
 
     def apply_dirichlet(
-        self, lhs: sps.spmatrix, rhs: np.ndarray[np.floating], verbose: bool = False
-    ) -> tuple[sps.spmatrix, np.ndarray[np.floating]]:
+        self, lhs: sps.spmatrix, rhs: NDArray[np.floating], verbose: bool = False
+    ) -> tuple[sps.spmatrix, NDArray[np.floating]]:
         """
         Apply Dirichlet boundary conditions to the global linear system.
 
@@ -185,7 +186,7 @@ class ProblemIGA:
         ----------
         lhs : sps.spmatrix
             Global sparse stiffness matrix of shape (3*nb_unique_nodes, 3*nb_unique_nodes).
-        rhs : np.ndarray[np.floating]
+        rhs : NDArray[np.floating]
             Global right-hand side vector of shape (3*nb_unique_nodes,).
         verbose : bool, optional
             If True, prints progress messages during application of Dirichlet
@@ -195,7 +196,7 @@ class ProblemIGA:
         -------
         lhs : sps.spmatrix
             Reduced stiffness matrix with Dirichlet conditions applied.
-        rhs : np.ndarray[np.floating]
+        rhs : NDArray[np.floating]
             Reduced RHS vector corresponding to the free degrees of freedom.
 
         Notes
@@ -208,7 +209,7 @@ class ProblemIGA:
 
         if verbose:
             print("Apply Dirichlet boundary conditions...", end="")
-        rhs = self.dirichlet.C.T @ (rhs - lhs @ self.dirichlet.k)
+        rhs = self.dirichlet.C.T @ (rhs - lhs @ self.dirichlet.k)  # type: ignore
         lhs = self.dirichlet.C.T @ lhs @ self.dirichlet.C
         if verbose:
             print("done")
@@ -218,10 +219,10 @@ class ProblemIGA:
     def solve_from_lhs_rhs(
         self,
         lhs: sps.spmatrix,
-        rhs: np.ndarray[np.floating],
+        rhs: NDArray[np.floating],
         iterative_solve: bool = False,
         verbose: bool = True,
-    ) -> np.ndarray[np.floating]:
+    ) -> NDArray[np.floating]:
         """
         Solve a linear system for the given left-hand side matrix and right-hand side vector.
 
@@ -235,7 +236,7 @@ class ProblemIGA:
         lhs : sps.spmatrix
             Sparse matrix representing the system after applying Dirichlet conditions.
             Can have arbitrary shape as long as it matches `rhs`.
-        rhs : np.ndarray[np.floating]
+        rhs : NDArray[np.floating]
             Right-hand side vector, already accounting for Dirichlet conditions.
         iterative_solve : bool, optional
             If True, use an iterative solver (conjugate gradient with diagonal preconditioner),
@@ -252,7 +253,7 @@ class ProblemIGA:
 
         Returns
         -------
-        dof : np.ndarray[np.floating]
+        dof : NDArray[np.floating]
             Solution vector representing the degrees of freedom in the
             unconstrained/reduced system.
 
@@ -268,7 +269,7 @@ class ProblemIGA:
             # Iterative solve with preconditioned conjugate gradient algorithm
             if verbose:
                 print("Preconditioner creation...", end="")
-            M = sps.diags(1 / lhs.diagonal())
+            M = sps.diags(1 / lhs.diagonal())  # type: ignore
             if verbose:
                 print("done")
             if verbose:
@@ -298,7 +299,7 @@ class ProblemIGA:
 
         return dof
 
-    def solve(self, iterative_solve=False) -> np.ndarray[np.floating]:
+    def solve(self, iterative_solve=False) -> NDArray[np.floating]:
         """
         Solve the linear elasticity problem for the multipatch IGA system.
 
@@ -318,7 +319,7 @@ class ProblemIGA:
 
         Returns
         -------
-        u : np.ndarray[np.floating]
+        u : NDArray[np.floating]
             Displacement vector including all degrees of freedom, in packed notation.
             Shape: (3, nb_unique_nodes), with the first dimension corresponding
             to the physical coordinates (x, y, z).
@@ -348,7 +349,7 @@ class ProblemIGA:
 
     def save_paraview(
         self,
-        u: np.ndarray[np.floating],
+        u: NDArray[np.floating],
         path: str,
         name: str,
         n_eval_per_elem: int = 10,
@@ -365,7 +366,7 @@ class ProblemIGA:
 
         Parameters
         ----------
-        u : np.ndarray[np.floating]
+        u : NDArray[np.floating]
             Displacement field in packed notation, including Dirichlet values.
             Shape: (3, nb_unique_nodes), where the first dimension corresponds to
             physical coordinates (x, y, z).

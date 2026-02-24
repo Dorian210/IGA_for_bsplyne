@@ -27,13 +27,13 @@ Attributes
 ----------
 C : sps.csc_matrix of shape (n_full_dofs, n_free_dofs)
     Sparse matrix defining the linear mapping from reduced DOFs to full DOFs.
-k : np.ndarray of shape (n_full_dofs,)
+k : NDArray of float of shape (n_full_dofs,)
     Particular solution ensuring that `u` satisfies the Dirichlet constraints.
 
   >>> __init__(
     self,
     C: scipy.sparse._matrix.spmatrix,
-    k: numpy.ndarray[numpy.floating]
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
       Initialize an affine Dirichlet constraint representation.
       
@@ -42,7 +42,7 @@ k : np.ndarray of shape (n_full_dofs,)
       C : sps.spmatrix
           Sparse matrix of shape (n_full_dofs, n_free_dofs) defining
           the linear mapping from reduced DOFs to full DOFs.
-      k : np.ndarray[np.floating]
+      k : NDArray[np.floating]
           Vector of shape (n_full_dofs,) defining the affine offset.
       
       Notes
@@ -74,8 +74,8 @@ k : np.ndarray of shape (n_full_dofs,)
 
   >>> lock_disp_inds(
     cls,
-    inds: numpy.ndarray[numpy.integer],
-    k: numpy.ndarray[numpy.floating]
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
       Create Dirichlet constraints by prescribing displacement values at selected DOFs.
       
@@ -87,9 +87,9 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      inds : np.ndarray[np.integer]
+      inds : NDArray[np.integer]
           Indices of the displacement vector `u` to be constrained.
-      k : np.ndarray[np.floating]
+      k : NDArray[np.floating]
           Target displacement vector of shape (n_full_dofs,). Only the
           values at `inds` are enforced.
       
@@ -105,8 +105,8 @@ k : np.ndarray of shape (n_full_dofs,)
 
   >>> set_u_inds_vals(
     self,
-    inds: numpy.ndarray[numpy.integer],
-    vals: numpy.ndarray[numpy.floating]
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    vals: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
       Impose pointwise Dirichlet conditions by prescribing displacement values
       at selected full DOFs.
@@ -125,9 +125,9 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      inds : np.ndarray[np.integer]
+      inds : NDArray[np.integer]
           Indices of the full displacement vector `u` to constrain.
-      vals : np.ndarray[np.floating]
+      vals : NDArray[np.floating]
           Prescribed displacement values associated with `inds`.
           Must have the same length as `inds`.
       
@@ -141,9 +141,9 @@ k : np.ndarray of shape (n_full_dofs,)
 
   >>> slave_reference_linear_relation(
     self,
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int],
-    coefs: Optional[numpy.ndarray[float]] = None
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    coefs: Optional[numpy.ndarray[Any, numpy.dtype[numpy.floating]]] = None
 )
       Impose linear multi-point constraints between full DOFs.
       
@@ -162,12 +162,12 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      slaves : np.ndarray[int] of shape (n_slaves,)
+      slaves : NDArray[np.integer] of shape (n_slaves,)
           Indices of DOFs that are constrained (slave DOFs).
-      references : np.ndarray[int] of shape (n_slaves, n_refs)
+      references : NDArray[np.integer] of shape (n_slaves, n_refs)
           Reference DOF indices controlling each slave DOF.
           Row `i` contains the references associated with `slaves[i]`.
-      coefs : np.ndarray[float], optional, shape (n_slaves, n_refs)
+      coefs : NDArray[np.floating], optional, shape (n_slaves, n_refs)
           Linear combination coefficients linking references to slaves.
           If None, slaves are defined as the average of their references.
       
@@ -193,8 +193,8 @@ k : np.ndarray of shape (n_full_dofs,)
 
   >>> u_du_ddof(
     self,
-    dof: numpy.ndarray[numpy.floating]
-) -> tuple[numpy.ndarray[numpy.floating], scipy.sparse._csc.csc_matrix]
+    dof: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> tuple[numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], scipy.sparse._csc.csc_matrix]
       Evaluate the displacement field and its derivative with respect to the reduced DOFs.
       
       The displacement field is obtained from the affine mapping:
@@ -206,12 +206,12 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      dof : np.ndarray[np.floating] of shape (n_dof,)
+      dof : NDArray[np.floating] of shape (n_dof,)
           Reduced degrees of freedom.
       
       Returns
       -------
-      u : np.ndarray[np.floating] of shape (n_u,)
+      u : NDArray[np.floating] of shape (n_u,)
           Displacement field.
       du_ddof : sps.csc_matrix of shape (n_u, n_dof)
           Jacobian of `u` with respect to `dof` : the matrix `C`.
@@ -222,8 +222,8 @@ k : np.ndarray of shape (n_full_dofs,)
 
   >>> u(
     self,
-    dof: numpy.ndarray[numpy.floating]
-) -> numpy.ndarray[numpy.floating]
+    dof: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Evaluate the displacement field from reduced DOFs.
       
       The displacement field is computed using the affine mapping:
@@ -232,7 +232,7 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      dof : np.ndarray[np.floating]
+      dof : NDArray[np.floating]
           Reduced degrees of freedom. Can be either:
       
           - shape (n_dof,)
@@ -240,7 +240,7 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Returns
       -------
-      u : np.ndarray[np.floating]
+      u : NDArray[np.floating]
           Displacement field with shape:
       
           - (n_u,) if `dof` is 1D
@@ -250,7 +250,10 @@ k : np.ndarray of shape (n_full_dofs,)
       -----
       This method supports vectorized evaluation over multiple DOF vectors.
 
-  >>> dof_lsq(self, u: numpy.ndarray[numpy.floating]) -> numpy.ndarray[numpy.floating]
+  >>> dof_lsq(
+    self,
+    u: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Compute reduced DOFs from a displacement field using a least-squares projection.
       
       This method computes `dof` such that:
@@ -263,7 +266,7 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Parameters
       ----------
-      u : np.ndarray[np.floating]
+      u : NDArray[np.floating]
           Displacement field. Can be either:
       
           - shape (n_u,)
@@ -271,7 +274,7 @@ k : np.ndarray of shape (n_full_dofs,)
       
       Returns
       -------
-      dof : np.ndarray[np.floating]
+      dof : NDArray[np.floating]
           Reduced degrees of freedom with shape:
       
           - (n_dof,) if `u` is 1D
@@ -332,7 +335,7 @@ nb_dofs_init : int
     Number of DOFs in the original unconstrained system (physical DOFs `u`).
 lhs : sps.spmatrix
     Accumulated constraint matrix `D`.
-rhs : np.ndarray[np.floating]
+rhs : NDArray[np.floating]
     Accumulated right-hand side vector `c`.
 
 Notes
@@ -367,7 +370,7 @@ satisfies all imposed constraints.
   >>> add_eqs(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating]
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
       Append linear affine constraint equations to the global constraint system.
       
@@ -389,7 +392,7 @@ satisfies all imposed constraints.
           - the initial number of DOFs (`nb_dofs_init`), or
           - the current number of DOFs in the handler.
       
-      rhs : np.ndarray[np.floating] of shape (n_eqs,)
+      rhs : NDArray[np.floating] of shape (n_eqs,)
           Right-hand side values associated with the constraint equations.
       
       Raises
@@ -424,7 +427,7 @@ satisfies all imposed constraints.
   >>> add_ref_dofs_with_behavior(
     self,
     behavior_mat: scipy.sparse._matrix.spmatrix,
-    slave_inds: numpy.ndarray[numpy.integer]
+    slave_inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
 )
       Introduce reference DOFs and constrain slave DOFs through a linear relation.
       
@@ -441,7 +444,7 @@ satisfies all imposed constraints.
           Linear operator defining how each reference DOF contributes to the
           corresponding slave DOFs.
       
-      slave_inds : np.ndarray[np.integer] of shape (n_slaves,)
+      slave_inds : NDArray[np.integer] of shape (n_slaves,)
           Indices of slave DOFs that are controlled by the reference DOFs.
           The ordering must match the rows of `behavior_mat`.
       
@@ -458,9 +461,9 @@ satisfies all imposed constraints.
 
   >>> add_rigid_body_constraint(
     self,
-    ref_point: numpy.ndarray[numpy.floating],
-    slaves_inds: numpy.ndarray[numpy.integer],
-    slaves_positions: numpy.ndarray[numpy.floating]
+    ref_point: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    slaves_inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    slaves_positions: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
 )
       Constrain slave nodes to follow a rigid body motion defined by a reference point.
       
@@ -474,14 +477,14 @@ satisfies all imposed constraints.
       
       Parameters
       ----------
-      ref_point : np.ndarray[np.floating] of shape (3,)
+      ref_point : NDArray[np.floating] of shape (3,)
           Reference point defining the center of rotation.
       
-      slaves_inds : np.ndarray[np.integer] of shape (3, n_nodes)
+      slaves_inds : NDArray[np.integer] of shape (3, n_nodes)
           DOF indices of the slave nodes. Each column contains the
           x, y, z DOF indices of a slave node.
       
-      slaves_positions : np.ndarray[np.floating] of shape (3, n_nodes)
+      slaves_positions : NDArray[np.floating] of shape (3, n_nodes)
           Physical coordinates of the slave nodes.
       
       Notes
@@ -495,8 +498,8 @@ satisfies all imposed constraints.
 
   >>> add_eqs_from_inds_vals(
     self,
-    inds: numpy.ndarray[numpy.integer],
-    vals: numpy.ndarray[numpy.floating] = None
+    inds: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    vals: Optional[numpy.ndarray[Any, numpy.dtype[numpy.floating]]] = None
 )
       Impose pointwise Dirichlet conditions on selected DOFs.
       
@@ -507,10 +510,10 @@ satisfies all imposed constraints.
       
       Parameters
       ----------
-      inds : np.ndarray[np.integer] of shape (n_eqs,)
+      inds : NDArray[np.integer] of shape (n_eqs,)
           Indices of DOFs to constrain.
       
-      vals : np.ndarray[np.floating] of shape (n_eqs,), optional
+      vals : NDArray[np.floating] of shape (n_eqs,), optional
           Prescribed values associated with each constrained DOF.
           If None, zero values are imposed.
       
@@ -526,7 +529,7 @@ satisfies all imposed constraints.
 
   >>> make_C_k(
     self
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._csc.csc_matrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
       Construct the affine transformation (C, k) enforcing all Dirichlet constraints.
       
       This method solves the linear constraint system:
@@ -550,11 +553,11 @@ satisfies all imposed constraints.
       
       Returns
       -------
-      C : sps.spmatrix
+      C : sps.csc_matrix
           Sparse matrix of shape (n_full_dofs, n_free_dofs) whose columns
           form a basis of the nullspace of `D`.
       
-      k : np.ndarray[np.floating]
+      k : NDArray[np.floating]
           Vector of shape (n_full_dofs,) representing a particular solution
           satisfying the constraints.
       
@@ -567,7 +570,9 @@ satisfies all imposed constraints.
       - The QR factorization is performed on Dᵀ to efficiently extract both
       the nullspace basis and the particular solution.
 
-  >>> get_reduced_Ck(self) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray]
+  >>> get_reduced_Ck(
+    self
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
       Extract the affine constraint transformation restricted to physical DOFs.
       
       This method computes the full transformation (C, k) using `self.make_C_k()`
@@ -583,7 +588,7 @@ satisfies all imposed constraints.
       C_u : sps.spmatrix
           Reduced nullspace basis matrix of shape (nb_dofs_init, n_free_dofs).
       
-      k_u : np.ndarray
+      k_u : NDArray[np.floating]
           Reduced particular solution vector of shape (nb_dofs_init,).
       
       Notes
@@ -607,7 +612,10 @@ satisfies all imposed constraints.
       dirichlet : Dirichlet
           A `Dirichlet` instance encapsulating the reduced transformation matrices.
 
-  >>> get_ref_multipliers_from_internal_residual(self, K_u_minus_f)
+  >>> get_ref_multipliers_from_internal_residual(
+    self,
+    K_u_minus_f: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Recover Lagrange multipliers associated with reference DOF constraints.
       
       This method reconstructs the Lagrange multipliers λ corresponding to
@@ -633,13 +641,13 @@ satisfies all imposed constraints.
       
       Parameters
       ----------
-      K_u_minus_f : np.ndarray
+      K_u_minus_f : NDArray[np.floating]
           Internal residual vector of shape (nb_dofs_init,),
           corresponding to K @ u - f restricted to physical DOFs.
       
       Returns
       -------
-      lamb : np.ndarray
+      lamb : NDArray[np.floating]
           Vector of Lagrange multipliers associated with reference DOF constraints.
       
       Notes
@@ -655,63 +663,63 @@ satisfies all imposed constraints.
 GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
   >>> slave_reference_linear_relation_sort(
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int]
-) -> numpy.ndarray[int]
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
       Sorts the slave nodes based on reference indices to respect
       hierarchical dependencies (each slave is processed after its references).
       
       Parameters
       ----------
-      slaves : np.ndarray[int]
+      slaves : NDArray[np.integer]
           Array of slave indices.
-      references : np.ndarray[int]
+      references : NDArray[np.integer]
           2D array where each row contains the reference indices controlling a slave.
       
       Returns
       -------
-      sorted_slaves : np.ndarray[int]
+      sorted_slaves : NDArray[np.integer]
           Array of slave indices sorted based on dependencies.
 
   >>> slave_reference_linear_relation_inner(
-    indices: numpy.ndarray[int],
-    indptr: numpy.ndarray[int],
-    data: numpy.ndarray[float],
-    k: numpy.ndarray[float],
-    slaves: numpy.ndarray[int],
-    references: numpy.ndarray[int],
-    coefs: numpy.ndarray[float],
-    sorted_slaves: numpy.ndarray[int]
-) -> tuple[numpy.ndarray[int], numpy.ndarray[int], numpy.ndarray[float], numpy.ndarray[float]]
+    indices: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    indptr: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    data: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    k: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    references: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]],
+    coefs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
+    sorted_slaves: numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]]
+) -> tuple[numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]], numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
       Applies slave-reference relations directly to CSR matrix arrays.
       
       Parameters
       ----------
-      indices : np.ndarray[int]
+      indices : NDArray[np.integer]
           Column indices of CSR matrix.
-      indptr : np.ndarray[int]
+      indptr : NDArray[np.integer]
           Row pointers of CSR matrix.
-      data : np.ndarray[float]
+      data : NDArray[np.floating]
           Nonzero values of CSR matrix.
-      k : np.ndarray[float]
+      k : NDArray[np.floating]
           Vector to be updated.
-      slaves : np.ndarray[int]
+      slaves : NDArray[np.integer]
           Array of slave indices.
-      references : np.ndarray[int]
+      references : NDArray[np.integer]
           2D array where each row contains the reference indices controlling a slave.
-      coefs : np.ndarray[float]
+      coefs : NDArray[np.floating]
           2D array of coefficients defining the linear relationship between references and
           slaves.
-      sorted_slaves : np.ndarray[int]
+      sorted_slaves : NDArray[np.integer]
           Array of slave indices sorted in topological order.
       
       Returns
       -------
-      rows : np.ndarray[int]
+      rows : NDArray[np.integer]
           Updated row indices of COO matrix.
-      cols : np.ndarray[int]
+      cols : NDArray[np.integer]
           Updated column indices of COO matrix.
-      data : np.ndarray[float]
+      data : NDArray[np.floating]
           Updated nonzero values of COO matrix.
-      k : np.ndarray[float]
+      k : NDArray[np.floating]
           Updated vector.

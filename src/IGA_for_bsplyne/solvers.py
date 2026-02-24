@@ -1,5 +1,8 @@
 import warnings
+import numpy as np
+from numpy.typing import NDArray
 import scipy.sparse as sps
+from scipy.sparse.linalg import spsolve
 from IGA_for_bsplyne.fallback_sparse_qr import my_qr_sparse
 
 # --- Cholmod / scikit-sparse ---
@@ -24,17 +27,18 @@ except ImportError:
     HAS_CHOLMOD = False
 
 
-def solve_sparse(A, b):
+def solve_sparse(A: sps.spmatrix, b: NDArray[np.floating]) -> NDArray[np.floating]:
     """Solve Ax=b using Cholmod if available, otherwise fallback to spsolve."""
     if HAS_CHOLMOD:
         try:
-            factor = cholesky(A)
+            factor = cholesky(A)  # type: ignore
             return factor(b)
         except:
             # Handle cases where A might not be PD
-            return sps.linalg.spsolve(A, b)
+            print("Matrix not positive definite. Falling back to scipy solver.")
+            return spsolve(A, b)  # type: ignore
     else:
-        return sps.linalg.spsolve(A, b)
+        return spsolve(A, b)  # type: ignore
 
 
 # --- SparseQR ---
@@ -56,9 +60,11 @@ except ImportError:
     HAS_SPARSEQR = False
 
 
-def qr_sparse(A):
+def qr_sparse(
+    A: sps.spmatrix,
+) -> tuple[sps.spmatrix, sps.spmatrix, NDArray[np.integer], int]:
     """Compute QR decomposition using sparseqr if available, otherwise fallback to my_qr_sparse."""
     if HAS_SPARSEQR:
-        return qr(A, economy=False)
+        return qr(A, economy=False)  # type: ignore
     else:
         return my_qr_sparse(A)

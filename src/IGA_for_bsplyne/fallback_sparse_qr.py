@@ -1,6 +1,8 @@
 import numpy as np
+from numpy.typing import NDArray
 import scipy.sparse as sps
 import numba as nb
+from numba.typed.typedlist import List as nb_List
 
 
 @nb.njit
@@ -125,15 +127,15 @@ def sparse_qr_numba(data, indices, indptr, shape):
     rows, cols = shape
 
     # Initialize R with A (CSR format)
-    R_idx = nb.typed.List()
-    R_dat = nb.typed.List()
+    R_idx = nb_List()
+    R_dat = nb_List()
     for r in range(rows):
         R_idx.append(indices[indptr[r] : indptr[r + 1]].copy())
         R_dat.append(data[indptr[r] : indptr[r + 1]].copy())
 
     # Initialize Q as a sparse Identity matrix
-    Q_idx = nb.typed.List()
-    Q_dat = nb.typed.List()
+    Q_idx = nb_List()
+    Q_dat = nb_List()
     for r in range(rows):
         Q_idx.append(np.array([r], dtype=np.int32))
         Q_dat.append(np.array([1.0], dtype=np.float64))
@@ -201,7 +203,9 @@ def sparse_qr_numba(data, indices, indptr, shape):
     return (Q_data, Q_indices, Q_indptr), (R_data, R_indices, R_indptr)
 
 
-def my_qr_sparse(A):
+def my_qr_sparse(
+    A: sps.spmatrix,
+) -> tuple[sps.csr_matrix, sps.csr_matrix, NDArray[np.integer], int]:
     """
     Computes the Sparse QR decomposition of matrix A.
     Uses column reordering to minimize fill-in.
@@ -212,14 +216,14 @@ def my_qr_sparse(A):
     - permutation: Column permutation array
     - rank: Numerical rank of the matrix
     """
-    A = A.tocsr()
+    A = A.tocsr()  # type: ignore
     m, n = A.shape
 
     # 1. Permutation to reduce fill-in
     col_counts = np.zeros(n, dtype=np.int32)
-    np.add.at(col_counts, A.indices, 1)
+    np.add.at(col_counts, A.indices, 1)  # type: ignore
     permutation = np.argsort(col_counts).astype(np.int32)
-    A_perm = A[:, permutation]
+    A_perm = A[:, permutation]  # type: ignore
 
     # 2. Numba QR
     (QT_data, QT_indices, QT_indptr), (R_data, R_indices, R_indptr) = sparse_qr_numba(
@@ -238,7 +242,7 @@ def my_qr_sparse(A):
     tol = (
         max(m, n) * np.finfo(float).eps * np.abs(diag_R).max() if len(diag_R) > 0 else 0
     )
-    rank = np.sum(np.abs(diag_R) > tol)
+    rank = np.count_nonzero(np.abs(diag_R) > tol)
 
     return QT.T, R_perm, permutation, rank
 
@@ -252,10 +256,12 @@ if __name__ == "__main__":
     A_data = np.random.randn(nnz)
     A_sparse = sps.coo_matrix((A_data, (A_rows, A_cols)), shape=(n, m)).tocsr()
 
-    Q, R, perm, rank = my_qr_sparse(A_sparse)
+    Q, R, perm, rank = my_qr_sparse(A_sparse)  # type: ignore
     P = sps.coo_matrix(
         (np.ones(perm.size), (perm, np.arange(perm.size))),
         shape=(A_sparse.shape[1], A_sparse.shape[1]),
     )
 
     print(np.abs(Q @ R @ P.T - A_sparse).max())
+
+# %%

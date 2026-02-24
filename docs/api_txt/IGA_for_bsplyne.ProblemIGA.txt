@@ -57,7 +57,7 @@ using :py:meth:`save_paraview`.
     self,
     verbose: bool = False,
     disable_parallel: bool = False
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
       Assemble the global linear system for the multipatch problem.
       
       This method computes the global left-hand side (LHS) matrix and
@@ -81,7 +81,7 @@ using :py:meth:`save_paraview`.
       lhs : sps.spmatrix
           The assembled global sparse stiffness matrix of shape
           (3 * nb_unique_nodes, 3 * nb_unique_nodes).
-      rhs : np.ndarray[np.floating]
+      rhs : NDArray[np.floating]
           The assembled global right-hand side vector of shape
           (3 * nb_unique_nodes,).
       
@@ -97,9 +97,9 @@ using :py:meth:`save_paraview`.
   >>> apply_dirichlet(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating],
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     verbose: bool = False
-) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[numpy.floating]]
+) -> tuple[scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]]
       Apply Dirichlet boundary conditions to the global linear system.
       
       This method modifies the global LHS matrix and RHS vector
@@ -114,7 +114,7 @@ using :py:meth:`save_paraview`.
       ----------
       lhs : sps.spmatrix
           Global sparse stiffness matrix of shape (3*nb_unique_nodes, 3*nb_unique_nodes).
-      rhs : np.ndarray[np.floating]
+      rhs : NDArray[np.floating]
           Global right-hand side vector of shape (3*nb_unique_nodes,).
       verbose : bool, optional
           If True, prints progress messages during application of Dirichlet
@@ -124,7 +124,7 @@ using :py:meth:`save_paraview`.
       -------
       lhs : sps.spmatrix
           Reduced stiffness matrix with Dirichlet conditions applied.
-      rhs : np.ndarray[np.floating]
+      rhs : NDArray[np.floating]
           Reduced RHS vector corresponding to the free degrees of freedom.
       
       Notes
@@ -137,10 +137,10 @@ using :py:meth:`save_paraview`.
   >>> solve_from_lhs_rhs(
     self,
     lhs: scipy.sparse._matrix.spmatrix,
-    rhs: numpy.ndarray[numpy.floating],
+    rhs: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     iterative_solve: bool = False,
     verbose: bool = True
-) -> numpy.ndarray[numpy.floating]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Solve a linear system for the given left-hand side matrix and right-hand side vector.
       
       This method solves the linear system
@@ -153,7 +153,7 @@ using :py:meth:`save_paraview`.
       lhs : sps.spmatrix
           Sparse matrix representing the system after applying Dirichlet conditions.
           Can have arbitrary shape as long as it matches `rhs`.
-      rhs : np.ndarray[np.floating]
+      rhs : NDArray[np.floating]
           Right-hand side vector, already accounting for Dirichlet conditions.
       iterative_solve : bool, optional
           If True, use an iterative solver (conjugate gradient with diagonal preconditioner),
@@ -170,7 +170,7 @@ using :py:meth:`save_paraview`.
       
       Returns
       -------
-      dof : np.ndarray[np.floating]
+      dof : NDArray[np.floating]
           Solution vector representing the degrees of freedom in the
           unconstrained/reduced system.
       
@@ -181,7 +181,10 @@ using :py:meth:`save_paraview`.
       tuning the preconditioner.
       - Use :py:meth:`apply_dirichlet` to handle Dirichlet constraints before calling this method.
 
-  >>> solve(self, iterative_solve=False) -> numpy.ndarray[numpy.floating]
+  >>> solve(
+    self,
+    iterative_solve=False
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Solve the linear elasticity problem for the multipatch IGA system.
       
       This method assembles the global system, applies Dirichlet boundary conditions,
@@ -200,7 +203,7 @@ using :py:meth:`save_paraview`.
       
       Returns
       -------
-      u : np.ndarray[np.floating]
+      u : NDArray[np.floating]
           Displacement vector including all degrees of freedom, in packed notation.
           Shape: (3, nb_unique_nodes), with the first dimension corresponding
           to the physical coordinates (x, y, z).
@@ -213,7 +216,7 @@ using :py:meth:`save_paraview`.
 
   >>> save_paraview(
     self,
-    u: numpy.ndarray[numpy.floating],
+    u: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]],
     path: str,
     name: str,
     n_eval_per_elem: int = 10,
@@ -229,7 +232,7 @@ using :py:meth:`save_paraview`.
       
       Parameters
       ----------
-      u : np.ndarray[np.floating]
+      u : NDArray[np.floating]
           Displacement field in packed notation, including Dirichlet values.
           Shape: (3, nb_unique_nodes), where the first dimension corresponds to
           physical coordinates (x, y, z).

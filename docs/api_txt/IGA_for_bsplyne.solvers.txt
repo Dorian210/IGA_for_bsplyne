@@ -4,8 +4,13 @@ Documentation for module IGA_for_bsplyne.solvers
 
 GLOBAL FUNCTIONS:
 ~~~~~~~~~~~~~~~~~~
-  >>> solve_sparse(A, b)
+  >>> solve_sparse(
+    A: scipy.sparse._matrix.spmatrix,
+    b: numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
+) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.floating]]
       Solve Ax=b using Cholmod if available, otherwise fallback to spsolve.
 
-  >>> qr_sparse(A)
+  >>> qr_sparse(
+    A: scipy.sparse._matrix.spmatrix
+) -> tuple[scipy.sparse._matrix.spmatrix, scipy.sparse._matrix.spmatrix, numpy.ndarray[typing.Any, numpy.dtype[numpy.integer]], int]
       Compute QR decomposition using sparseqr if available, otherwise fallback to my_qr_sparse.
