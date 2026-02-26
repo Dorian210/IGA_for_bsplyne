@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
-<Collection>
-<DataSet timestep="0" group="interior" part="0" file="IGA_interior_0_0.vtu" name="interior_0"/>
-<DataSet timestep="0" group="elements_borders" part="0" file="IGA_elements_borders_0_0.vtu" name="elements_borders_0"/>
-<DataSet timestep="0" group="control_points" part="0" file="IGA_control_points_0_0.vtu" name="control_points_0"/>
-</Collection>
-</VTKFile>
